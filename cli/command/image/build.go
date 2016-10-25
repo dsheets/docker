@@ -6,10 +6,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"time"
 
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api"
@@ -167,6 +169,10 @@ func runBuild(dockerCli *command.DockerCli, options buildOptions) error {
 		return fmt.Errorf("unable to prepare context: path %q not found", specifiedContext)
 	}
 
+	if options.dockerfileName == "-" {
+		relDockerfile = builder.DefaultDockerfileName
+	}
+
 	if err != nil {
 		if options.quiet && urlutil.IsURL(specifiedContext) {
 			fmt.Fprintln(dockerCli.Err(), progBuff)
@@ -230,6 +236,28 @@ func runBuild(dockerCli *command.DockerCli, options buildOptions) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if options.dockerfileName == "-" && specifiedContext != "-" {
+		stdin := dockerCli.In()
+		file, err := ioutil.ReadAll(stdin)
+		stdin.Close()
+		if err != nil {
+			return err
+		}
+		now := time.Now()
+		fileHdr := tar.Header{
+			Name:       builder.DefaultDockerfileName,
+			Mode:       0600,
+			Uid:        0,
+			Gid:        0,
+			Size:       int64(len(file)),
+			ModTime:    now,
+			Typeflag:   tar.TypeReg,
+			AccessTime: now,
+			ChangeTime: now,
+		}
+		buildCtx = archive.ReplaceFileTarWrapper(buildCtx, fileHdr, file)
 	}
 
 	ctx := context.Background()
