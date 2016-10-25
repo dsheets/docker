@@ -225,6 +225,59 @@ func CompressStream(dest io.Writer, compression Compression) (io.WriteCloser, er
 	}
 }
 
+// ReplaceFileTarWrapper converts inputTarStream to a new tar stream
+// with a single file called header.Name with contents of file.
+func ReplaceFileTarWrapper(inputTarStream io.ReadCloser, header tar.Header, file []byte) io.ReadCloser {
+	pipeReader, pipeWriter := io.Pipe()
+
+	go func() {
+		tarReader := tar.NewReader(inputTarStream)
+		tarWriter := tar.NewWriter(pipeWriter)
+
+		defer inputTarStream.Close()
+
+		for {
+			hdr, err := tarReader.Next()
+			if err == io.EOF {
+				header.Size = int64(len(file))
+
+				if err := tarWriter.WriteHeader(&header); err != nil {
+					pipeWriter.CloseWithError(err)
+					return
+				}
+
+				content := bytes.NewBuffer(file)
+				if _, err := io.Copy(tarWriter, content); err != nil {
+					pipeWriter.CloseWithError(err)
+					return
+				}
+
+				tarWriter.Close()
+				pipeWriter.Close()
+				return
+			}
+			if err != nil {
+				pipeWriter.CloseWithError(err)
+				return
+			}
+
+			content := io.Reader(tarReader)
+			if hdr.Name != header.Name {
+				if err := tarWriter.WriteHeader(hdr); err != nil {
+					pipeWriter.CloseWithError(err)
+					return
+				}
+
+				if _, err := io.Copy(tarWriter, content); err != nil {
+					pipeWriter.CloseWithError(err)
+					return
+				}
+			}
+		}
+	}()
+	return pipeReader
+}
+
 // Extension returns the extension of a file that uses the specified compression algorithm.
 func (compression *Compression) Extension() string {
 	switch *compression {
