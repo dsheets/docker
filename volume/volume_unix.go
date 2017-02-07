@@ -30,6 +30,13 @@ var labelModes = map[string]bool{
 	"z": true,
 }
 
+// state modes
+var stateModes = map[string]bool{
+	"consistent": true,
+	"cached":     true,
+	"delegated":  true,
+}
+
 // BackwardsCompatible decides whether this mount point can be
 // used in old versions of Docker or not.
 // Only bind mounts and local volumes can be used in old versions of Docker.
@@ -62,6 +69,7 @@ func ValidMountMode(mode string) bool {
 	labelModeCount := 0
 	propagationModeCount := 0
 	copyModeCount := 0
+	stateModeCount := 0
 
 	for _, o := range strings.Split(mode, ",") {
 		switch {
@@ -73,13 +81,15 @@ func ValidMountMode(mode string) bool {
 			propagationModeCount++
 		case copyModeExists(o):
 			copyModeCount++
+		case stateModes[o]:
+			stateModeCount++
 		default:
 			return false
 		}
 	}
 
 	// Only one string for each mode is allowed.
-	if rwModeCount > 1 || labelModeCount > 1 || propagationModeCount > 1 || copyModeCount > 1 {
+	if rwModeCount > 1 || labelModeCount > 1 || propagationModeCount > 1 || copyModeCount > 1 || stateModeCount > 1 {
 		return false
 	}
 	return true
