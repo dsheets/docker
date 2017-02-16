@@ -26,6 +26,7 @@ type Mount struct {
 	Source   string `json:",omitempty"`
 	Target   string `json:",omitempty"`
 	ReadOnly bool   `json:",omitempty"`
+	State    State  `json:",omitempty"`
 
 	BindOptions   *BindOptions   `json:",omitempty"`
 	VolumeOptions *VolumeOptions `json:",omitempty"`
@@ -59,6 +60,20 @@ var Propagations = []Propagation{
 	PropagationRSlave,
 	PropagationSlave,
 }
+
+// State represents the consistency requirements of a mount.
+type State string
+
+const (
+	// StateConsistent guarantees bind-mount-like consistency
+	StateConsistent State = "consistent"
+	// StateCached mounts can cache read data and FS structure
+	StateCached State = "cached"
+	// StateDelegated mounts can cache read and written data and structure
+	StateDelegated State = "delegated"
+	// StateDefault provides "consistent" behavior unless overridden
+	StateDefault State = "default"
+)
 
 // BindOptions defines options specific to mounts of type "bind".
 type BindOptions struct {

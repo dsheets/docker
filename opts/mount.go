@@ -95,6 +95,8 @@ func (m *MountOpt) Set(value string) error {
 			if err != nil {
 				return fmt.Errorf("invalid value for %s: %s", key, value)
 			}
+		case "state":
+			mount.State = mounttypes.State(strings.ToLower(value))
 		case "bind-propagation":
 			bindOptions().Propagation = mounttypes.Propagation(strings.ToLower(value))
 		case "volume-nocopy":
