@@ -29,11 +29,7 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 			return nil, err
 		}
 
-		mnts = append(mnts, container.Mount{
-			Source:      mount.Source,
-			Destination: mount.Destination,
-			Writable:    mount.RW,
-		})
+		mnts = append(mnts, container.MountOfMountPoint(mount))
 	}
 
 	sort.Sort(mounts(mnts))

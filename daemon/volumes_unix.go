@@ -48,12 +48,6 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 			return nil, err
 		}
 		if !c.TrySetNetworkMount(m.Destination, m.Source) {
-			mnt := container.Mount{
-				Source:      m.Source,
-				Destination: m.Destination,
-				Writable:    m.RW,
-				Propagation: string(m.Propagation),
-			}
 			if m.Volume != nil {
 				attributes := map[string]string{
 					"driver":      m.Volume.DriverName(),
@@ -64,7 +58,7 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 				}
 				daemon.LogVolumeEvent(m.Volume.Name(), "mount", attributes)
 			}
-			mounts = append(mounts, mnt)
+			mounts = append(mounts, container.MountOfMountPoint(m))
 		}
 	}
 
