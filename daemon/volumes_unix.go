@@ -43,13 +43,13 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 			return nil, err
 		}
 		rootUID, rootGID := daemon.GetRemappedUIDGID()
-		path, err := m.Setup(c.MountLabel, rootUID, rootGID)
+		err := m.Setup(c.MountLabel, rootUID, rootGID)
 		if err != nil {
 			return nil, err
 		}
-		if !c.TrySetNetworkMount(m.Destination, path) {
+		if !c.TrySetNetworkMount(m.Destination, m.Source) {
 			mnt := container.Mount{
-				Source:      path,
+				Source:      m.Source,
 				Destination: m.Destination,
 				Writable:    m.RW,
 				Propagation: string(m.Propagation),

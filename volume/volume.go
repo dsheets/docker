@@ -124,12 +124,12 @@ type MountPoint struct {
 
 // Setup sets up a mount point by either mounting the volume if it is
 // configured, or creating the source directory if supplied.
-func (m *MountPoint) Setup(mountLabel string, rootUID, rootGID int) (path string, err error) {
+// Invariant: after a successful call, m.Source will contain the path of the mount point
+func (m *MountPoint) Setup(mountLabel string, rootUID, rootGID int) (err error) {
 	defer func() {
 		if err == nil {
 			if label.RelabelNeeded(m.Mode) {
 				if err = label.Relabel(m.Source, mountLabel, label.IsShared(m.Mode)); err != nil {
-					path = ""
 					err = errors.Wrapf(err, "error setting label on mount source '%s'", m.Source)
 					return
 				}
@@ -145,27 +145,27 @@ func (m *MountPoint) Setup(mountLabel string, rootUID, rootGID int) (path string
 		}
 		path, err := m.Volume.Mount(id)
 		if err != nil {
-			return "", errors.Wrapf(err, "error while mounting volume '%s'", m.Source)
+			return errors.Wrapf(err, "error while mounting volume '%s'", m.Source)
 		}
 		m.ID = id
-		return path, nil
+		m.Source = path
+		return nil
 	}
 	if len(m.Source) == 0 {
-		return "", fmt.Errorf("Unable to setup mount point, neither source nor volume defined")
+		return fmt.Errorf("Unable to setup mount point, neither source nor volume defined")
 	}
-	// system.MkdirAll() produces an error if m.Source exists and is a file (not a directory),
 	if m.Type == mounttypes.TypeBind {
 		// idtools.MkdirAllNewAs() produces an error if m.Source exists and is a file (not a directory)
 		// also, makes sure that if the directory is created, the correct remapped rootUID/rootGID will own it
 		if err := idtools.MkdirAllNewAs(m.Source, 0755, rootUID, rootGID); err != nil {
 			if perr, ok := err.(*os.PathError); ok {
 				if perr.Err != syscall.ENOTDIR {
-					return "", errors.Wrapf(err, "error while creating mount source path '%s'", m.Source)
+					return errors.Wrapf(err, "error while creating mount source path '%s'", m.Source)
 				}
 			}
 		}
 	}
-	return m.Source, nil
+	return nil
 }
 
 // Path returns the path of a volume in a mount point.
