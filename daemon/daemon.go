@@ -42,6 +42,7 @@ import (
 	"github.com/docker/docker/libcontainerd"
 	"github.com/docker/docker/migrate/v1"
 	"github.com/docker/docker/pkg/idtools"
+	"github.com/docker/docker/pkg/mountpoint"
 	"github.com/docker/docker/pkg/plugingetter"
 	"github.com/docker/docker/pkg/sysinfo"
 	"github.com/docker/docker/pkg/system"
@@ -654,6 +655,11 @@ func NewDaemon(config *config.Config, registryService registry.Service, containe
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't create plugin manager")
+	}
+
+	config.MountPointChain, err = mountpoint.NewChain(config.MountPointPlugins, pluginStore)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't create mount point plugin chain")
 	}
 
 	var graphDrivers []string

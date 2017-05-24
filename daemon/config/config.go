@@ -16,6 +16,7 @@ import (
 	"github.com/docker/docker/opts"
 	"github.com/docker/docker/pkg/authorization"
 	"github.com/docker/docker/pkg/discovery"
+	"github.com/docker/docker/pkg/mountpoint"
 	"github.com/docker/docker/registry"
 	"github.com/imdario/mergo"
 	"github.com/sirupsen/logrus"
@@ -136,6 +137,9 @@ type CommonConfig struct {
 	// MaxConcurrentUploads is the maximum number of uploads that
 	// may take place at a time for each push.
 	MaxConcurrentUploads *int `json:"max-concurrent-uploads,omitempty"`
+
+	MountPointChain   *mountpoint.Chain `json:"-"`
+	MountPointPlugins []string          `json:"mount-point-plugins,omitempty"` // MountPointPlugins holds list of mount point plugins
 
 	// ShutdownTimeout is the timeout value (in seconds) the daemon will wait for the container
 	// to stop when daemon is being shutdown

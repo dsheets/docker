@@ -21,6 +21,7 @@ import (
 	"github.com/docker/docker/pkg/authorization"
 	"github.com/docker/docker/pkg/ioutils"
 	"github.com/docker/docker/pkg/mount"
+	"github.com/docker/docker/pkg/mountpoint"
 	"github.com/docker/docker/pkg/pubsub"
 	"github.com/docker/docker/pkg/system"
 	"github.com/docker/docker/plugin/v2"
@@ -54,6 +55,7 @@ type ManagerConfig struct {
 	Root               string
 	ExecRoot           string
 	AuthzMiddleware    *authorization.Middleware
+	MountPointChain    *mountpoint.Chain
 }
 
 // Manager controls the plugin subsystem.

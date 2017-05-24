@@ -247,6 +247,8 @@ type PluginsInfo struct {
 	Authorization []string
 	// List of Log plugins registered
 	Log []string
+	// List of MountPoint plugins registered
+	MountPoint []string
 }
 
 // ExecStartCheck is a temp struct used by execStart

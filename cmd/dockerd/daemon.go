@@ -39,6 +39,7 @@ import (
 	dopts "github.com/docker/docker/opts"
 	"github.com/docker/docker/pkg/authorization"
 	"github.com/docker/docker/pkg/jsonlog"
+	"github.com/docker/docker/pkg/mountpoint"
 	"github.com/docker/docker/pkg/pidfile"
 	"github.com/docker/docker/pkg/plugingetter"
 	"github.com/docker/docker/pkg/signal"
@@ -232,6 +233,9 @@ func (cli *DaemonCli) start(opts *daemonOptions) (err error) {
 	if err := validateAuthzPlugins(cli.Config.AuthorizationPlugins, pluginStore); err != nil {
 		return fmt.Errorf("Error validating authorization plugin: %v", err)
 	}
+	if err := validateMountPointPlugins(cli.Config.MountPointPlugins, pluginStore); err != nil {
+		return fmt.Errorf("Error validating mount point plugin: %s", err)
+	}
 
 	// TODO: move into startMetricsServer()
 	if cli.Config.MetricsAddress != "" {
@@ -373,6 +377,13 @@ func (cli *DaemonCli) reloadConfig() {
 			return
 		}
 		cli.authzMiddleware.SetPlugins(config.AuthorizationPlugins)
+
+		// Revalidate and reload the mount point plugins
+		if err := validateMountPointPlugins(config.MountPointPlugins, cli.d.PluginStore); err != nil {
+			logrus.Fatalf("Error validating mount point plugin: %s", err)
+			return
+		}
+		config.MountPointChain.SetPlugins(config.MountPointPlugins)
 
 		if err := cli.d.Reload(config); err != nil {
 			logrus.Errorf("Error reconfiguring the daemon: %v", err)
@@ -556,6 +567,7 @@ func (cli *DaemonCli) initMiddlewares(s *apiserver.Server, cfg *apiserver.Config
 	cli.authzMiddleware = authorization.NewMiddleware(cli.Config.AuthorizationPlugins, pluginStore)
 	cli.Config.AuthzMiddleware = cli.authzMiddleware
 	s.UseMiddleware(cli.authzMiddleware)
+
 	return nil
 }
 
@@ -564,6 +576,18 @@ func (cli *DaemonCli) initMiddlewares(s *apiserver.Server, cfg *apiserver.Config
 func validateAuthzPlugins(requestedPlugins []string, pg plugingetter.PluginGetter) error {
 	for _, reqPlugin := range requestedPlugins {
 		if _, err := pg.Get(reqPlugin, authorization.AuthZApiImplements, plugingetter.Lookup); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// validateMountPointPlugins validates that the plugins requested with
+// the --mount-point-plugin flag are valid MountPointDriver plugins
+// present on the host and available to the daemon
+func validateMountPointPlugins(requestedPlugins []string, pg plugingetter.PluginGetter) error {
+	for _, reqPlugin := range requestedPlugins {
+		if _, err := pg.Get(reqPlugin, mountpoint.MountPointAPIImplements, plugingetter.Lookup); err != nil {
 			return err
 		}
 	}

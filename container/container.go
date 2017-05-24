@@ -30,6 +30,7 @@ import (
 	"github.com/docker/docker/opts"
 	"github.com/docker/docker/pkg/idtools"
 	"github.com/docker/docker/pkg/ioutils"
+	"github.com/docker/docker/pkg/mountpoint"
 	"github.com/docker/docker/pkg/signal"
 	"github.com/docker/docker/pkg/symlink"
 	"github.com/docker/docker/pkg/system"
@@ -86,7 +87,7 @@ type Container struct {
 	RestartCount           int
 	HasBeenStartedBefore   bool
 	HasBeenManuallyStopped bool // used for unless-stopped restart policy
-	MountPoints            map[string]*volume.MountPoint
+	MountPoints            map[string]*mountpoint.MountPoint
 	HostConfig             *containertypes.HostConfig `json:"-"` // do not serialize the host config in the json, otherwise we'll make the container unportable
 	ExecCommands           *exec.Store                `json:"-"`
 	DependencyStore        agentexec.DependencyGetter `json:"-"`
@@ -120,7 +121,7 @@ func NewBaseContainer(id, root string) *Container {
 		State:         NewState(),
 		ExecCommands:  exec.NewStore(),
 		Root:          root,
-		MountPoints:   make(map[string]*volume.MountPoint),
+		MountPoints:   make(map[string]*mountpoint.MountPoint),
 		StreamConfig:  stream.NewConfig(),
 		attachContext: &attachContext{},
 	}
@@ -435,14 +436,16 @@ func (container *Container) ShouldRestart() bool {
 
 // AddMountPointWithVolume adds a new mount point configured with a volume to the container.
 func (container *Container) AddMountPointWithVolume(destination string, vol volume.Volume, rw bool) {
-	container.MountPoints[destination] = &volume.MountPoint{
-		Type:        mounttypes.TypeVolume,
-		Name:        vol.Name(),
-		Driver:      vol.DriverName(),
-		Destination: destination,
-		RW:          rw,
-		Volume:      vol,
-		CopyData:    volume.DefaultCopyMode,
+	container.MountPoints[destination] = &mountpoint.MountPoint{
+		MountPoint: &volume.MountPoint{
+			Type:        mounttypes.TypeVolume,
+			Name:        vol.Name(),
+			Driver:      vol.DriverName(),
+			Destination: destination,
+			RW:          rw,
+			Volume:      vol,
+			CopyData:    volume.DefaultCopyMode,
+		},
 	}
 }
 
