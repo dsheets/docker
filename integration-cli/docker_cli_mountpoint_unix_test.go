@@ -11,11 +11,10 @@ import (
 	"os"
 	"strings"
 
-	mounttypes "github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/integration-cli/checker"
 	"github.com/docker/docker/integration-cli/daemon"
-	"github.com/docker/docker/pkg/mountpoint"
 	"github.com/docker/docker/pkg/plugins"
+	"github.com/docker/docker/volume/mountpoint"
 	"github.com/go-check/check"
 )
 
@@ -73,16 +72,16 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 	// matches -v /host:/container
 	s.ctrl[0].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Types: map[mounttypes.Type]bool{
-			mounttypes.TypeBind: true,
+		Types: map[mountpoint.Type]bool{
+			mountpoint.TypeBind: true,
 		},
 	}
 	// matches -v /host:/container AND all local volume mounts
 	s.ctrl[1].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Types: map[mounttypes.Type]bool{
-			mounttypes.TypeBind:   true,
-			mounttypes.TypeVolume: true,
+		Types: map[mountpoint.Type]bool{
+			mountpoint.TypeBind:   true,
+			mountpoint.TypeVolume: true,
 		},
 		VolumePatterns: []mountpoint.VolumePattern{
 			{
@@ -93,8 +92,8 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 	// matches local volume bind mounts (but not -v /container mounts)
 	s.ctrl[2].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Types: map[mounttypes.Type]bool{
-			mounttypes.TypeVolume: true,
+		Types: map[mountpoint.Type]bool{
+			mountpoint.TypeVolume: true,
 		},
 		VolumePatterns: []mountpoint.VolumePattern{
 			{
@@ -108,8 +107,8 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 	// matches -v /container
 	s.ctrl[3].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Types: map[mounttypes.Type]bool{
-			mounttypes.TypeVolume: true,
+		Types: map[mountpoint.Type]bool{
+			mountpoint.TypeVolume: true,
 		},
 		VolumePatterns: []mountpoint.VolumePattern{
 			{
@@ -125,9 +124,9 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 	// matches all bind mounts
 	s.ctrl[4].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Types: map[mounttypes.Type]bool{
-			mounttypes.TypeBind:   true,
-			mounttypes.TypeVolume: true,
+		Types: map[mountpoint.Type]bool{
+			mountpoint.TypeBind:   true,
+			mountpoint.TypeVolume: true,
 		},
 		VolumePatterns: []mountpoint.VolumePattern{
 			{
@@ -440,7 +439,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginChangeDirectory(c *check.C) 
 
 	c.Assert(len(s.ctrl[3].attachMounts), check.Equals, 1)
 	c.Assert(len(s.ctrl[3].attachMounts[0]), check.Equals, 1)
-	c.Assert(s.ctrl[3].attachMounts[0][0].Source(), check.Equals, newdir)
+	c.Assert(s.ctrl[3].attachMounts[0][0].EffectiveSource, check.Equals, newdir)
 }
 
 func (s *DockerMountPointSuite) TestMountPointPluginFailureUnwind(c *check.C) {
@@ -587,15 +586,15 @@ func (s *DockerMountPointSuite) TestMountPointPluginMultipleMounts(c *check.C) {
 
 	c.Assert(len(s.ctrl[0].attachMounts), check.Equals, 1)
 	c.Assert(len(s.ctrl[0].attachMounts[0]), check.Equals, 1)
-	c.Assert(s.ctrl[0].attachMounts[0][0].Source(), check.Equals, "/")
+	c.Assert(s.ctrl[0].attachMounts[0][0].EffectiveSource, check.Equals, "/")
 
 	c.Assert(len(s.ctrl[1].attachMounts), check.Equals, 1)
 	c.Assert(len(s.ctrl[1].attachMounts[0]), check.Equals, 2)
-	c.Assert(s.ctrl[1].attachMounts[0][1].Source(), check.Equals, "/usr")
+	c.Assert(s.ctrl[1].attachMounts[0][1].EffectiveSource, check.Equals, "/usr")
 
 	c.Assert(len(s.ctrl[2].attachMounts), check.Equals, 1)
 	c.Assert(len(s.ctrl[2].attachMounts[0]), check.Equals, 1)
-	c.Assert(s.ctrl[2].attachMounts[0][0].Source(), check.Equals, "/etc")
+	c.Assert(s.ctrl[2].attachMounts[0][0].EffectiveSource, check.Equals, "/etc")
 }
 
 func (s *DockerMountPointSuite) TestMountPointPluginDetachCleanFailure(c *check.C) {
