@@ -29,7 +29,7 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 		}
 
 		mnts = append(mnts, container.Mount{
-			Source:      mount.Source(),
+			Source:      mount.EffectiveSource(),
 			Destination: mount.Destination,
 			Writable:    mount.RW,
 		})

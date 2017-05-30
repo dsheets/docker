@@ -42,7 +42,6 @@ import (
 	"github.com/docker/docker/libcontainerd"
 	"github.com/docker/docker/migrate/v1"
 	"github.com/docker/docker/pkg/idtools"
-	"github.com/docker/docker/pkg/mountpoint"
 	"github.com/docker/docker/pkg/plugingetter"
 	"github.com/docker/docker/pkg/sysinfo"
 	"github.com/docker/docker/pkg/system"
@@ -51,6 +50,7 @@ import (
 	refstore "github.com/docker/docker/reference"
 	"github.com/docker/docker/registry"
 	"github.com/docker/docker/runconfig"
+	"github.com/docker/docker/volume"
 	volumedrivers "github.com/docker/docker/volume/drivers"
 	"github.com/docker/docker/volume/local"
 	"github.com/docker/docker/volume/store"
@@ -657,7 +657,7 @@ func NewDaemon(config *config.Config, registryService registry.Service, containe
 		return nil, errors.Wrap(err, "couldn't create plugin manager")
 	}
 
-	config.MountPointChain, err = mountpoint.NewChain(config.MountPointPlugins, pluginStore)
+	config.MountPointChain, err = volume.NewMountPointChain(config.MountPointPlugins, pluginStore)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't create mount point plugin chain")
 	}

@@ -15,7 +15,6 @@ import (
 	"github.com/docker/docker/container"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/docker/docker/pkg/mount"
-	"github.com/docker/docker/pkg/mountpoint"
 	"github.com/docker/docker/volume"
 	"github.com/docker/docker/volume/drivers"
 	"github.com/docker/docker/volume/local"
@@ -27,7 +26,7 @@ import (
 // /etc/resolv.conf, and if it is not, appends it to the array of mounts.
 func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, error) {
 	var mounts []container.Mount
-	var mountPoints []*mountpoint.MountPoint
+	var mountPoints []*volume.MountPoint
 	// TODO: tmpfs mounts should be part of Mountpoints
 	tmpfsMounts := make(map[string]bool)
 	tmpfsMountInfo, err := c.TmpfsMounts()
@@ -59,7 +58,7 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 		if err != nil {
 			return nil, err
 		}
-		if !c.TrySetNetworkMount(m.Destination, m.MountPoint.Source) {
+		if !c.TrySetNetworkMount(m.Destination, m.Source) {
 			if m.Volume != nil {
 				attributes := map[string]string{
 					"driver":      m.Volume.DriverName(),
@@ -93,7 +92,7 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 	return append(mounts, netMounts...), nil
 }
 
-func (daemon *Daemon) attachMounts(id string, mountPoints []*mountpoint.MountPoint) (mounts []container.Mount, err error) {
+func (daemon *Daemon) attachMounts(id string, mountPoints []*volume.MountPoint) (mounts []container.Mount, err error) {
 	err = daemon.configStore.MountPointChain.AttachMounts(id, mountPoints)
 	if err != nil {
 		return nil, err
@@ -101,7 +100,7 @@ func (daemon *Daemon) attachMounts(id string, mountPoints []*mountpoint.MountPoi
 
 	for _, m := range mountPoints {
 		mounts = append(mounts, container.Mount{
-			Source:      m.Source(),
+			Source:      m.EffectiveSource(),
 			Destination: m.Destination,
 			Writable:    m.RW,
 			Propagation: string(m.Propagation),
@@ -185,8 +184,8 @@ func (daemon *Daemon) verifyVolumesInfo(container *container.Container) error {
 				}
 				container.AddMountPointWithVolume(destination, v, true)
 			} else { // Bind mount
-				m := mountpoint.MountPoint{
-					MountPoint: &volume.MountPoint{Source: hostPath, Destination: destination, RW: rw},
+				m := volume.MountPoint{
+					Source: hostPath, Destination: destination, RW: rw,
 				}
 				container.MountPoints[destination] = &m
 			}

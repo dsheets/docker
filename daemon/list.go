@@ -10,7 +10,6 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/container"
 	"github.com/docker/docker/image"
-	"github.com/docker/docker/pkg/mountpoint"
 	"github.com/docker/docker/volume"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
@@ -472,7 +471,7 @@ func includeContainerInList(container *container.Snapshot, ctx *listContext) ite
 			if m.Name != "" {
 				volumesByName[m.Name] = m
 			} else {
-				volumesByName[m.MountPoint.Source] = m
+				volumesByName[m.Source] = m
 			}
 		}
 		volumesByDestination := make(map[string]types.MountPoint)

@@ -1,7 +1,6 @@
 package mountpoint
 
 import (
-	mounttypes "github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/plugingetter"
 	"github.com/docker/docker/pkg/plugins"
 )
@@ -12,7 +11,7 @@ type Plugin interface {
 	Name() string
 
 	// Types returns the mount point types that this plugin interposes
-	Types() map[mounttypes.Type]bool
+	Types() map[Type]bool
 
 	// VolumePatterns returns a list of volume type patterns that this plugin interposes
 	VolumePatterns() []VolumePattern
@@ -29,9 +28,9 @@ type Plugin interface {
 
 var pluginCache map[string]Plugin
 
-// newPlugins constructs and initializes the mount point plugins based
+// NewPlugins constructs and initializes the mount point plugins based
 // on plugin names
-func newPlugins(names []string) ([]Plugin, error) {
+func NewPlugins(names []string) ([]Plugin, error) {
 	plugins := []Plugin{}
 	pluginsMap := make(map[string]struct{})
 	for _, name := range names {
@@ -39,7 +38,7 @@ func newPlugins(names []string) ([]Plugin, error) {
 			continue
 		}
 		pluginsMap[name] = struct{}{}
-		plugin, err := newMountPointPlugin(name)
+		plugin, err := NewMountPointPlugin(name)
 		if err != nil {
 			return nil, err
 		}
@@ -64,15 +63,15 @@ func GetPluginGetter() plugingetter.PluginGetter {
 type mountPointPlugin struct {
 	plugin         *plugins.Client
 	name           string
-	types          map[mounttypes.Type]bool
+	types          map[Type]bool
 	volumePatterns []VolumePattern
 }
 
-// newMountPointPlugin of a name will return a plugin object or an
+// NewMountPointPlugin of a name will return a plugin object or an
 // error. The plugin may be created new and involve a plugin
 // properties query or it may come from a cache of already initialized
 // mount point plugin objects.
-func newMountPointPlugin(name string) (Plugin, error) {
+func NewMountPointPlugin(name string) (Plugin, error) {
 	var e error
 	var plugin plugingetter.CompatPlugin
 
@@ -113,7 +112,7 @@ func (b *mountPointPlugin) Name() string {
 	return b.name
 }
 
-func (b *mountPointPlugin) Types() map[mounttypes.Type]bool {
+func (b *mountPointPlugin) Types() map[Type]bool {
 	return b.types
 }
 

@@ -1,38 +1,39 @@
-package mountpoint
+package volume
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
 	"github.com/Sirupsen/logrus"
 	mounttypes "github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/plugingetter"
-	"github.com/docker/docker/volume"
+	"github.com/docker/docker/volume/mountpoint"
 	"github.com/pkg/errors"
 )
 
-// Chain uses a list of plugins to interpose on mount point attachment
-// and detachment
-type Chain struct {
+// MountPointChain uses a list of plugins to interpose on mount point
+// attachment and detachment
+type MountPointChain struct {
 	mu      sync.Mutex
-	plugins []Plugin
+	plugins []mountpoint.Plugin
 }
 
-// NewChain creates a new Chain with a slice of plugin names.
-func NewChain(names []string, pg plugingetter.PluginGetter) (*Chain, error) {
-	SetPluginGetter(pg)
-	plugins, err := newPlugins(names)
+// NewMountPointChain creates a new Chain with a slice of plugin names.
+func NewMountPointChain(names []string, pg plugingetter.PluginGetter) (*MountPointChain, error) {
+	mountpoint.SetPluginGetter(pg)
+	plugins, err := mountpoint.NewPlugins(names)
 	if err != nil {
 		return nil, err
 	}
-	return &Chain{
+	return &MountPointChain{
 		plugins: plugins,
 	}, nil
 }
 
 // AttachMounts runs a list of mount attachments through a mount point plugin chain
-func (c *Chain) AttachMounts(id string, mounts []*MountPoint) error {
+func (c *MountPointChain) AttachMounts(id string, mounts []*MountPoint) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -47,12 +48,13 @@ func (c *Chain) AttachMounts(id string, mounts []*MountPoint) error {
 
 		// select mounts for this plugin
 		for _, mount := range mounts {
-			if types[mount.MountPoint.Type] {
-				switch mount.MountPoint.Type {
-				case mounttypes.TypeBind:
+			typ := mountPointTypeOfAPIType(mount.Type)
+			if types[typ] {
+				switch typ {
+				case mountpoint.TypeBind:
 					selectedMounts = append(selectedMounts, mount)
-				case mounttypes.TypeVolume:
-					if len(volumePatterns) == 0 || doVolumePatternsMatch(plugin.VolumePatterns(), mount) {
+				case mountpoint.TypeVolume:
+					if doVolumePatternsMatch(volumePatterns, mount) {
 						selectedMounts = append(selectedMounts, mount)
 					}
 				default: // only bind and volume mounts are supported right now
@@ -62,11 +64,11 @@ func (c *Chain) AttachMounts(id string, mounts []*MountPoint) error {
 
 		if len(selectedMounts) > 0 {
 			// send attachment request to the plugin
-			var pmounts []*MountPoint
+			var pmounts []*mountpoint.MountPoint
 			for _, selectedMount := range selectedMounts {
-				pmounts = append(pmounts, selectedMount)
+				pmounts = append(pmounts, pluginMountPointOfMountPoint(selectedMount))
 			}
-			request := &AttachRequest{id, pmounts}
+			request := &mountpoint.AttachRequest{id, pmounts}
 			response, err := plugin.MountPointAttach(request)
 			if err != nil {
 				return c.unwindAttachOnErr(plugin.Name(), id, mounts, err)
@@ -93,8 +95,8 @@ func (c *Chain) AttachMounts(id string, mounts []*MountPoint) error {
 // doVolumePatternsMatch checks if any pattern matches a mount
 // point. If no patterns are supplied, the mount point match
 // conservatively succeeds.
-func doVolumePatternsMatch(volumePatterns []VolumePattern, mount *MountPoint) bool {
-	volume := mount.MountPoint.Volume
+func doVolumePatternsMatch(volumePatterns []mountpoint.VolumePattern, mount *MountPoint) bool {
+	volume := mount.Volume
 	volumeDriver := volume.DriverName()
 
 	if len(volumePatterns) == 0 {
@@ -111,8 +113,8 @@ func doVolumePatternsMatch(volumePatterns []VolumePattern, mount *MountPoint) bo
 }
 
 // doesOptionPatternMatch checks
-func doesOptionPatternMatch(pattern OptionPattern, vol volume.Volume) bool {
-	if v, ok := vol.(volume.DetailedVolume); ok {
+func doesOptionPatternMatch(pattern mountpoint.OptionPattern, vol Volume) bool {
+	if v, ok := vol.(DetailedVolume); ok {
 		options := v.Options()
 
 		for keyPattern, patternValueSet := range pattern {
@@ -172,7 +174,7 @@ func elementOf(needle string, set []string) bool {
 }
 
 // DetachMounts detaches mounts from a mount point plugin chain
-func (c *Chain) DetachMounts(container string, mounts map[string]*MountPoint) error {
+func (c *MountPointChain) DetachMounts(container string, mounts map[string]*MountPoint) error {
 	var list []*MountPoint
 	for _, mp := range mounts {
 		list = append(list, mp)
@@ -182,7 +184,7 @@ func (c *Chain) DetachMounts(container string, mounts map[string]*MountPoint) er
 
 // unwindAttachOnErr will clean up previous attachments if an error
 // occurs during attachment
-func (c *Chain) unwindAttachOnErr(pluginName, container string, mounts []*MountPoint, err error) (ret error) {
+func (c *MountPointChain) unwindAttachOnErr(pluginName, container string, mounts []*MountPoint, err error) (ret error) {
 	defer func() {
 		ret = errors.Wrap(ret, "plugin "+pluginName+" failed with error")
 	}()
@@ -200,7 +202,7 @@ func (c *Chain) unwindAttachOnErr(pluginName, container string, mounts []*MountP
 // mount points
 func unwind(container string, mounts []*MountPoint) error {
 	var err error
-	var plugin *Plugin
+	var plugin *mountpoint.Plugin
 	moreToUnwind := true
 
 	for moreToUnwind {
@@ -231,7 +233,7 @@ func unwind(container string, mounts []*MountPoint) error {
 					}
 				}
 			}
-			request := &DetachRequest{container}
+			request := &mountpoint.DetachRequest{container}
 			response, e := (*plugin).MountPointDetach(request)
 			if e != nil {
 				errString := fmt.Sprintf("unwind detach API error for %s: \"%s\"", (*plugin).Name(), e)
@@ -268,27 +270,89 @@ func max(a, b int) int {
 }
 
 // SetPlugins sets the mount point plugins in the chain
-func (c *Chain) SetPlugins(names []string) (err error) {
+func (c *MountPointChain) SetPlugins(names []string) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.plugins, err = newPlugins(names); err != nil {
+	if c.plugins, err = mountpoint.NewPlugins(names); err != nil {
 		return err
 	}
 	return nil
 }
 
 // DisableMountPointPlugin removes the mount point plugin from the chain
-func (c *Chain) DisableMountPointPlugin(name string) {
+func (c *MountPointChain) DisableMountPointPlugin(name string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	// TODO: is it OK that this just removes it from further use?
 	// There may still be mounts which are relying on it during tear
 	// down
-	var plugins []Plugin
+	var plugins []mountpoint.Plugin
 	for _, plugin := range c.plugins {
 		if plugin.Name() != name {
 			plugins = append(plugins, plugin)
 		}
 	}
 	c.plugins = plugins
+}
+
+func mountPointTypeOfAPIType(t mounttypes.Type) mountpoint.Type {
+	var typ mountpoint.Type
+	switch t {
+	case mounttypes.TypeBind:
+		typ = mountpoint.TypeBind
+	case mounttypes.TypeVolume:
+		typ = mountpoint.TypeVolume
+	case mounttypes.TypeTmpfs:
+		typ = mountpoint.TypeTmpfs
+	}
+	return typ
+}
+
+func pluginMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
+	typ := mountPointTypeOfAPIType(mp.Type)
+	var labels map[string]string
+	var driverOptions map[string]string
+	if mp.Spec.VolumeOptions != nil {
+		labels = mp.Spec.VolumeOptions.Labels
+		driverOptions = mp.Spec.VolumeOptions.DriverConfig.Options
+	}
+	var scope mountpoint.Scope
+	if v, ok := mp.Volume.(DetailedVolume); ok {
+		scope = mountpoint.Scope(v.Scope())
+	}
+	var sizeBytes int64
+	var mode os.FileMode
+	if mp.Spec.TmpfsOptions != nil {
+		sizeBytes = mp.Spec.TmpfsOptions.SizeBytes
+		mode = mp.Spec.TmpfsOptions.Mode
+	}
+	return &mountpoint.MountPoint{
+		Source:          mp.Source,
+		EffectiveSource: mp.EffectiveSource(),
+		Destination:     mp.Destination,
+		ReadOnly:        !mp.RW,
+		Name:            mp.Name,
+		Driver:          mp.Driver,
+		Type:            typ,
+		Mode:            mp.Mode,
+		Propagation:     mp.Propagation,
+		ID:              mp.ID,
+		Consistency:     mp.Spec.Consistency,
+		Labels:          labels,
+		DriverOptions:   driverOptions,
+		Scope:           scope,
+		SizeBytes:       sizeBytes,
+		MountMode:       mode,
+		AppliedPlugins:  pluginAppliedPluginsOfAppliedPlugins(mp.AppliedPlugins),
+	}
+}
+
+func pluginAppliedPluginsOfAppliedPlugins(plugins []AppliedMountPointPlugin) (ps []mountpoint.AppliedPlugin) {
+	for _, p := range plugins {
+		ps = append(ps, mountpoint.AppliedPlugin{
+			Name:      p.Name,
+			MountPath: p.MountPath,
+		})
+	}
+
+	return ps
 }

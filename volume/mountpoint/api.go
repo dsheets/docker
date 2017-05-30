@@ -1,7 +1,22 @@
 package mountpoint
 
 import (
-	mounttypes "github.com/docker/docker/api/types/mount"
+	"os"
+
+	"github.com/docker/docker/api/types/mount"
+)
+
+// Type represents the type of a mount.
+type Type string
+
+// Type constants
+const (
+	// TypeBind is the type for mounting host dir
+	TypeBind Type = "bind"
+	// TypeVolume is the type for remote storage volumes
+	TypeVolume Type = "volume"
+	// TypeTmpfs is the type for mounting tmpfs
+	TypeTmpfs Type = "tmpfs"
 )
 
 const (
@@ -28,7 +43,7 @@ type PropertiesResponse struct {
 	Success bool
 
 	// Types lists the types of mount points that this plugin interposes
-	Types map[mounttypes.Type]bool
+	Types map[Type]bool
 
 	// VolumePatterns returns a list of volume type patterns that this plugin interposes
 	VolumePatterns []VolumePattern `json:",omitempty"`
@@ -90,4 +105,50 @@ type DetachResponse struct {
 
 	// Err stores a message in case there's an error
 	Err string `json:",omitempty"`
+}
+
+// MountPoint is the representation of a container mount point exposed to
+// mount point plugins
+type MountPoint struct {
+	EffectiveSource string
+	// from volume/volume#MountPoint
+	Source      string
+	Destination string
+	ReadOnly    bool
+	Name        string
+	Driver      string
+	Type        Type              `json:",omitempty"`
+	Mode        string            `json:",omitempty"`
+	Propagation mount.Propagation `json:",omitempty"`
+	ID          string            `json:",omitempty"`
+
+	AppliedPlugins []AppliedPlugin
+
+	// from api/types/mount
+	Consistency mount.Consistency `json:",omitempty"`
+	Labels      map[string]string `json:",omitempty"`
+
+	DriverOptions map[string]string `json:",omitempty"`
+	Scope         Scope             `json:",omitempty"`
+
+	SizeBytes int64       `json:",omitempty"`
+	MountMode os.FileMode `json:",omitempty"`
+}
+
+// Scope describes the accessibility of a volume
+type Scope string
+
+// Scopes define if a volume has is cluster-wide (global) or local only.
+// Scopes are returned by the volume driver when it is queried for capabilities and then set on a volume
+const (
+	LocalScope  Scope = "local"
+	GlobalScope Scope = "global"
+)
+
+// AppliedPlugin is the representation of a mount point plugin already
+// applied to a mount point as exposed to later mount point plugins in
+// the stack
+type AppliedPlugin struct {
+	Name      string
+	MountPath string `json:",omitempty"`
 }
