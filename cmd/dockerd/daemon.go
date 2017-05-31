@@ -25,7 +25,7 @@ import (
 	sessionrouter "github.com/docker/docker/api/server/router/session"
 	swarmrouter "github.com/docker/docker/api/server/router/swarm"
 	systemrouter "github.com/docker/docker/api/server/router/system"
-	"github.com/docker/docker/api/server/router/volume"
+	volumerouter "github.com/docker/docker/api/server/router/volume"
 	"github.com/docker/docker/builder/dockerfile"
 	"github.com/docker/docker/builder/fscache"
 	"github.com/docker/docker/cli/debug"
@@ -46,6 +46,7 @@ import (
 	"github.com/docker/docker/plugin"
 	"github.com/docker/docker/registry"
 	"github.com/docker/docker/runconfig"
+	"github.com/docker/docker/volume"
 	"github.com/docker/docker/volume/mountpoint"
 	"github.com/docker/go-connections/tlsconfig"
 	swarmapi "github.com/docker/swarmkit/api"
@@ -383,7 +384,16 @@ func (cli *DaemonCli) reloadConfig() {
 			logrus.Fatalf("Error validating mount point plugin: %s", err)
 			return
 		}
-		config.MountPointChain.SetPlugins(config.MountPointPlugins)
+		if config.MountPointChain == nil {
+			chain, err := volume.NewMountPointChain(config.MountPointPlugins, cli.d.PluginStore)
+			if err != nil {
+				logrus.Fatalf("Error creating mount point plugin chain: %s", err)
+				return
+			}
+			config.MountPointChain = chain
+		} else {
+			config.MountPointChain.SetPlugins(config.MountPointPlugins)
+		}
 
 		if err := cli.d.Reload(config); err != nil {
 			logrus.Errorf("Error reconfiguring the daemon: %v", err)
@@ -524,7 +534,7 @@ func initRouter(opts routerOptions) {
 		container.NewRouter(opts.daemon, decoder),
 		image.NewRouter(opts.daemon, decoder),
 		systemrouter.NewRouter(opts.daemon, opts.cluster, opts.buildCache),
-		volume.NewRouter(opts.daemon),
+		volumerouter.NewRouter(opts.daemon),
 		build.NewRouter(opts.buildBackend, opts.daemon),
 		sessionrouter.NewRouter(opts.sessionManager),
 		swarmrouter.NewRouter(opts.cluster),
