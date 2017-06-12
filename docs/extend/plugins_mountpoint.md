@@ -146,7 +146,7 @@ should implement the following three methods:
 ```json
 {
     "Success": "Indicates whether the properties query was successful (bool)",
-    "Types":   "Enumerates the types of mount points ('bind', 'volume') this mount point plugin interposes ({ string -> bool })"
+    "Types":   "Enumerates the types of mount points ('bind', 'volume') this mount point plugin interposes ({ string -> bool })",
     "VolumePatterns": [
         {
             "VolumePlugin":  "A volume plugin name to require (string)",
@@ -156,7 +156,7 @@ should implement the following three methods:
             with a '!' to invert the match or '\!' to match a key or
             value beginning with '!'. ({ string -> string })"
         }
-    ]
+    ],
     "Err":     "If Success is false, contains a descriptive error message (string)"
 }
 ```
@@ -184,6 +184,7 @@ should implement the following three methods:
            "NewMountPoint": "If not omitted or the empty string,
            indicates a new path to use as the source of this mount point
            (string)"
+       }
    ],
    "Err":         "If Success is false, contains a descriptive error message (string)"
 }
@@ -208,7 +209,7 @@ should implement the following three methods:
    fatal to the container mount detachment process (false, default) or
    if the failure should cause the detaching container to return an
    error code but otherwise continue unwinding the container's mount
-   point plugin stack (bool)"
+   point plugin stack (bool)",
    "Err":         "If Success is false, contains a descriptive error message (string)"
 }
 ```
