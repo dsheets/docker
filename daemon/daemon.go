@@ -642,6 +642,11 @@ func NewDaemon(config *config.Config, registryService registry.Service, containe
 	}
 	registerMetricsPluginCallback(d.PluginStore, metricsSockPath)
 
+	config.MountPointChain, err = volume.NewMountPointChain(config.MountPointPlugins, pluginStore)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't create mount point plugin chain")
+	}
+
 	// Plugin system initialization should happen before restore. Do not change order.
 	d.pluginManager, err = plugin.NewManager(plugin.ManagerConfig{
 		Root:               filepath.Join(config.Root, "plugins"),
@@ -652,14 +657,10 @@ func NewDaemon(config *config.Config, registryService registry.Service, containe
 		LiveRestoreEnabled: config.LiveRestoreEnabled,
 		LogPluginEvent:     d.LogPluginEvent, // todo: make private
 		AuthzMiddleware:    config.AuthzMiddleware,
+		MountPointChain:    config.MountPointChain,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't create plugin manager")
-	}
-
-	config.MountPointChain, err = volume.NewMountPointChain(config.MountPointPlugins, pluginStore)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't create mount point plugin chain")
 	}
 
 	var graphDrivers []string
