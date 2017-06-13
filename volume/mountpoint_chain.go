@@ -294,6 +294,18 @@ func (c *MountPointChain) DisableMountPointPlugin(name string) {
 	c.plugins = plugins
 }
 
+// EnableMountPointPlugin appends a mount point plugin to the chain
+func (c *MountPointChain) EnableMountPointPlugin(name string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	plugin, err := mountpoint.NewMountPointPlugin(name)
+	if err != nil {
+		return err
+	}
+	c.plugins = append(c.plugins, plugin)
+	return nil
+}
+
 func mountPointTypeOfAPIType(t mounttypes.Type) mountpoint.Type {
 	var typ mountpoint.Type
 	switch t {
