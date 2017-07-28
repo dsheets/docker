@@ -3,10 +3,8 @@ package volume
 import (
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 
-	"github.com/Sirupsen/logrus"
 	mounttypes "github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/plugingetter"
 	"github.com/docker/docker/volume/mountpoint"
@@ -41,23 +39,16 @@ func (c *MountPointChain) AttachMounts(id string, mounts []*MountPoint) error {
 
 	for _, plugin := range c.plugins {
 		var selectedMounts []*MountPoint
-		types := plugin.Types()
-		volumePatterns := plugin.VolumePatterns()
+		patterns := plugin.Patterns()
 
 		mountPointClock++
 
 		// select mounts for this plugin
 		for _, mount := range mounts {
-			typ := mountPointTypeOfAPIType(mount.Type)
-			if types[typ] {
-				switch typ {
-				case mountpoint.TypeBind:
+			for _, pattern := range patterns {
+				if mountpoint.PatternMatches(pattern, pluginMountPointOfMountPoint(mount)) {
 					selectedMounts = append(selectedMounts, mount)
-				case mountpoint.TypeVolume:
-					if doVolumePatternsMatch(volumePatterns, mount) {
-						selectedMounts = append(selectedMounts, mount)
-					}
-				default: // only bind and volume mounts are supported right now
+					break
 				}
 			}
 		}
@@ -83,94 +74,13 @@ func (c *MountPointChain) AttachMounts(id string, mounts []*MountPoint) error {
 					break
 				}
 				if attachment.Attach {
-					selectedMounts[k].PushPlugin(plugin, attachment.NewMountPoint, mountPointClock)
+					selectedMounts[k].PushPlugin(plugin, attachment.MountPoint, mountPointClock)
 				}
 			}
 		}
 	}
 
 	return nil
-}
-
-// doVolumePatternsMatch checks if any pattern matches a mount
-// point. If no patterns are supplied, the mount point match
-// conservatively succeeds.
-func doVolumePatternsMatch(volumePatterns []mountpoint.VolumePattern, mount *MountPoint) bool {
-	volume := mount.Volume
-	volumeDriver := volume.DriverName()
-
-	if len(volumePatterns) == 0 {
-		return true
-	}
-
-	for _, pattern := range volumePatterns {
-		if volumeDriver == pattern.VolumePlugin && doesOptionPatternMatch(pattern.OptionPattern, volume) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// doesOptionPatternMatch checks
-func doesOptionPatternMatch(pattern mountpoint.OptionPattern, vol Volume) bool {
-	if v, ok := vol.(DetailedVolume); ok {
-		options := v.Options()
-
-		for keyPattern, patternValueSet := range pattern {
-			keyLiteral := parsePattern(keyPattern)
-			if optsValue, ok := options[keyLiteral]; ok {
-				if isNegation(keyPattern) {
-					return false
-				}
-				optsValueSet := strings.Split(optsValue, ",")
-				for _, segmentPattern := range patternValueSet {
-					segmentLiteral := parsePattern(segmentPattern)
-					negate := isNegation(segmentPattern)
-					if negate == elementOf(segmentLiteral, optsValueSet) {
-						return false
-					}
-				}
-			} else {
-				if !isNegation(keyPattern) {
-					return false
-				}
-			}
-		}
-	} else {
-		logrus.Warnf("volume '%s' from '%s' is not volume.DetailedVolume", vol.Name(), vol.DriverName())
-	}
-
-	return true
-}
-
-// parsePattern returns the literal segment to match
-func parsePattern(segment string) string {
-	if len(segment) > 0 {
-		if segment[0] == '!' || (len(segment) > 1 && segment[0] == '\\') {
-			return segment[1:]
-		}
-	}
-	return segment
-}
-
-// isNegation is true if the supplied segment contains a single ! at
-// its beginning. To use a literal single ! prefix, the pattern must begin \!.
-func isNegation(segment string) bool {
-	if len(segment) > 0 && segment[0] == '!' {
-		return true
-	}
-	return false
-}
-
-// elementOf checks if needle is present in set
-func elementOf(needle string, set []string) bool {
-	for _, el := range set {
-		if needle == el {
-			return true
-		}
-	}
-	return false
 }
 
 // DetachMounts detaches mounts from a mount point plugin chain
@@ -361,8 +271,8 @@ func pluginMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
 func pluginAppliedPluginsOfAppliedPlugins(plugins []AppliedMountPointPlugin) (ps []mountpoint.AppliedPlugin) {
 	for _, p := range plugins {
 		ps = append(ps, mountpoint.AppliedPlugin{
-			Name:      p.Name,
-			MountPath: p.MountPath,
+			Name:       p.Name,
+			MountPoint: p.Attachment,
 		})
 	}
 

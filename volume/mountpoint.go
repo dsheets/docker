@@ -11,10 +11,10 @@ import (
 // point path to (if any change), and the order of mount point
 // application.
 type AppliedMountPointPlugin struct {
-	Name      string             // Name is the name of the plugin (for later lookup)
-	plugin    *mountpoint.Plugin // plugin stores the plugin object
-	MountPath string             // MountPath is the new path of the mount (or "" if unchanged)
-	Clock     int                // Clock is a positive integer used to ensure mount detachments occur in the correct order
+	Name       string                          // Name is the name of the plugin (for later lookup)
+	plugin     *mountpoint.Plugin              // plugin stores the plugin object
+	Attachment mountpoint.MountPointAttachment // Attachment contains whatever changes the plugin has made to the mount
+	Clock      int                             // Clock is a positive integer used to ensure mount detachments occur in the correct order
 }
 
 // Plugin will retrieve the Plugin object or create a new one if none is available
@@ -34,20 +34,20 @@ func (p AppliedMountPointPlugin) Plugin() (*mountpoint.Plugin, error) {
 func (m *MountPoint) EffectiveSource() string {
 	for i := len(m.AppliedPlugins) - 1; i >= 0; i-- {
 		appliedPlugin := m.AppliedPlugins[i]
-		if appliedPlugin.MountPath != "" {
-			return appliedPlugin.MountPath
+		if appliedPlugin.Attachment.EffectiveSource != "" {
+			return appliedPlugin.Attachment.EffectiveSource
 		}
 	}
 	return m.Source
 }
 
 // PushPlugin pushes a new applied plugin onto the mount point's plugin stack
-func (m *MountPoint) PushPlugin(plugin mountpoint.Plugin, newMountPoint string, clock int) {
+func (m *MountPoint) PushPlugin(plugin mountpoint.Plugin, attachment mountpoint.MountPointAttachment, clock int) {
 	appliedPlugin := AppliedMountPointPlugin{
-		Name:      plugin.Name(),
-		plugin:    &plugin,
-		MountPath: newMountPoint,
-		Clock:     clock,
+		Name:       plugin.Name(),
+		plugin:     &plugin,
+		Attachment: attachment,
+		Clock:      clock,
 	}
 	m.AppliedPlugins = append(m.AppliedPlugins, appliedPlugin)
 }

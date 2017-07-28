@@ -1,3 +1,5 @@
+//+build !test
+
 package mountpoint
 
 import (
@@ -10,11 +12,8 @@ type Plugin interface {
 	// Name returns the registered plugin name
 	Name() string
 
-	// Types returns the mount point types that this plugin interposes
-	Types() map[Type]bool
-
-	// VolumePatterns returns a list of volume type patterns that this plugin interposes
-	VolumePatterns() []VolumePattern
+	// Patterns returns the mount point patterns that this plugin interposes
+	Patterns() []MountPointPattern
 
 	// MountPointProperties returns the properties of the mount point plugin
 	MountPointProperties(*PropertiesRequest) (*PropertiesResponse, error)
@@ -61,10 +60,9 @@ func GetPluginGetter() plugingetter.PluginGetter {
 
 // mountPointPlugin is an internal adapter to the docker plugin system
 type mountPointPlugin struct {
-	plugin         *plugins.Client
-	name           string
-	types          map[Type]bool
-	volumePatterns []VolumePattern
+	plugin   *plugins.Client
+	name     string
+	patterns []MountPointPattern
 }
 
 // NewMountPointPlugin of a name will return a plugin object or an
@@ -99,10 +97,9 @@ func NewMountPointPlugin(name string) (Plugin, error) {
 	}
 
 	mpp := &mountPointPlugin{
-		plugin:         plugin.Client(),
-		name:           plugin.Name(),
-		types:          properties.Types,
-		volumePatterns: properties.VolumePatterns,
+		plugin:   plugin.Client(),
+		name:     plugin.Name(),
+		patterns: properties.Patterns,
 	}
 	pluginCache[name] = mpp
 	return mpp, nil
@@ -112,12 +109,8 @@ func (b *mountPointPlugin) Name() string {
 	return b.name
 }
 
-func (b *mountPointPlugin) Types() map[Type]bool {
-	return b.types
-}
-
-func (b *mountPointPlugin) VolumePatterns() []VolumePattern {
-	return b.volumePatterns
+func (b *mountPointPlugin) Patterns() []MountPointPattern {
+	return b.patterns
 }
 
 func (b *mountPointPlugin) MountPointAttach(req *AttachRequest) (*AttachResponse, error) {

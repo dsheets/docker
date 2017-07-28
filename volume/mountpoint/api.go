@@ -42,29 +42,13 @@ type PropertiesResponse struct {
 	// Success indicates whether the properties query was successful
 	Success bool
 
-	// Types lists the types of mount points that this plugin interposes
-	Types map[Type]bool
-
-	// VolumePatterns returns a list of volume type patterns that this plugin interposes
-	VolumePatterns []VolumePattern `json:",omitempty"`
+	// Patterns is the DNF pattern set for which this plugin receives
+	// interposition requests
+	Patterns []MountPointPattern
 
 	// Err stores a message in case there's an error
 	Err string `json:",omitempty"`
 }
-
-// VolumePattern is a conjunction of predicates that must match a volume mount
-type VolumePattern struct {
-	// VolumePlugin is the volume plugin name that must be matched
-	VolumePlugin string
-	// OptionPattern is a set of predicates that a mount from volume plugin VolumePlugin must satisfy
-	OptionPattern OptionPattern `json:",omitempty"`
-}
-
-// OptionPattern : all of the keys must be present and each value must
-// match a comma-separated segment of the corresponding key; keys and
-// values may begin with a '!' to invert the match or '\!' to match a
-// key or value beginning with '!'.
-type OptionPattern map[string][]string
 
 // AttachRequest holds data required for mount point plugin attachment interposition
 type AttachRequest struct {
@@ -86,8 +70,16 @@ type AttachResponse struct {
 
 // Attachment describes how the plugin will interact with the mount
 type Attachment struct {
-	Attach        bool
-	NewMountPoint string `json:",omitempty"`
+	Attach     bool
+	MountPoint MountPointAttachment `json:",omitempty"`
+}
+
+type MountPointAttachment struct {
+	EffectiveSource string
+
+	// from api/types/mount
+	Consistency mount.Consistency `json:",omitempty"`
+	//Labels      map[string]string `json:",omitempty"`
 }
 
 // DetachRequest holds data required for mount point plugin detachment interposition
@@ -107,8 +99,9 @@ type DetachResponse struct {
 	Err string `json:",omitempty"`
 }
 
-// MountPoint is the representation of a container mount point exposed to
-// mount point plugins
+// MountPoint is the representation of a container mount point exposed
+// to mount point plugins. MountPointPattern and MountPointAttachment
+// should be the same shape as this type.
 type MountPoint struct {
 	EffectiveSource string
 	// from volume/volume#MountPoint
@@ -149,6 +142,74 @@ const (
 // applied to a mount point as exposed to later mount point plugins in
 // the stack
 type AppliedPlugin struct {
-	Name      string
-	MountPath string `json:",omitempty"`
+	Name       string
+	MountPoint MountPointAttachment
+}
+
+type MountPointPattern struct {
+	EffectiveSource *StringPattern `json:",omitempty"`
+	// from volume/volume#MountPoint
+	Source      *StringPattern     `json:",omitempty"`
+	Destination *StringPattern     `json:",omitempty"`
+	ReadOnly    *bool              `json:",omitempty"`
+	Name        *StringPattern     `json:",omitempty"`
+	Driver      *StringPattern     `json:",omitempty"`
+	Type        *Type              `json:",omitempty"`
+	Mode        *StringPattern     `json:",omitempty"`
+	Propagation *mount.Propagation `json:",omitempty"`
+	ID          *StringPattern     `json:",omitempty"`
+
+	AppliedPlugins *AppliedPluginsPattern
+
+	// from api/types/mount
+	Consistency *mount.Consistency `json:",omitempty"`
+	Labels      *StringMapPattern  `json:",omitempty"`
+
+	DriverOptions *StringMapPattern `json:",omitempty"`
+	Scope         *Scope            `json:",omitempty"`
+
+	//SizeBytes *int64       `json:",omitempty"`
+	//MountMode *os.FileMode `json:",omitempty"`
+}
+
+type AppliedPluginsPattern struct {
+	Not bool `json:",omitempty"`
+
+	Exists         []AppliedPluginPattern `json:",omitempty"`
+	All            []AppliedPluginPattern `json:",omitempty"`
+	AnySequence    []AppliedPluginPattern `json:",omitempty"`
+	TopSequence    []AppliedPluginPattern `json:",omitempty"`
+	BottomSequence []AppliedPluginPattern `json:",omitempty"`
+	RelativeOrder  []AppliedPluginPattern `json:",omitempty"`
+}
+
+type AppliedPluginPattern struct {
+	Name       StringPattern               `json:",omitempty"`
+	MountPoint MountPointAttachmentPattern `json:",omitempty"`
+}
+
+type MountPointAttachmentPattern struct {
+	EffectiveSource StringPattern `json:",omitempty"`
+
+	// from api/types/mount
+	Consistency *mount.Consistency `json:",omitempty"`
+	//Labels      map[string]string `json:",omitempty"`
+}
+
+type StringMapPattern struct {
+	Not bool `json:",omitempty"`
+
+	Exists map[StringPattern]*StringPattern `json:",omitempty"`
+	All    map[StringPattern]*StringPattern `json:",omitempty"`
+}
+
+type StringPattern struct {
+	Not bool `json:",omitempty"`
+
+	Empty      bool   `json:",omitempty"`
+	Prefix     string `json:",omitempty"`
+	PathPrefix string `json:",omitempty"`
+	Suffix     string `json:",omitempty"`
+	Exactly    string `json:",omitempty"`
+	Contains   string `json:",omitempty"`
 }
