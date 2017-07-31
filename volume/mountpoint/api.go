@@ -147,49 +147,53 @@ type AppliedPlugin struct {
 }
 
 type MountPointPattern struct {
-	EffectiveSource *StringPattern `json:",omitempty"`
+	EffectiveSource []StringPattern `json:",omitempty"`
 	// from volume/volume#MountPoint
-	Source      *StringPattern     `json:",omitempty"`
-	Destination *StringPattern     `json:",omitempty"`
+	Source      []StringPattern    `json:",omitempty"`
+	Destination []StringPattern    `json:",omitempty"`
 	ReadOnly    *bool              `json:",omitempty"`
-	Name        *StringPattern     `json:",omitempty"`
-	Driver      *StringPattern     `json:",omitempty"`
+	Name        []StringPattern    `json:",omitempty"`
+	Driver      []StringPattern    `json:",omitempty"`
 	Type        *Type              `json:",omitempty"`
-	Mode        *StringPattern     `json:",omitempty"`
+	Mode        []StringPattern    `json:",omitempty"`
 	Propagation *mount.Propagation `json:",omitempty"`
-	ID          *StringPattern     `json:",omitempty"`
+	ID          []StringPattern    `json:",omitempty"`
 
 	AppliedPlugins *AppliedPluginsPattern
 
 	// from api/types/mount
 	Consistency *mount.Consistency `json:",omitempty"`
-	Labels      *StringMapPattern  `json:",omitempty"`
+	Labels      []StringMapPattern `json:",omitempty"`
 
-	DriverOptions *StringMapPattern `json:",omitempty"`
-	Scope         *Scope            `json:",omitempty"`
+	DriverOptions []StringMapPattern `json:",omitempty"`
+	Scope         *Scope             `json:",omitempty"`
 
 	//SizeBytes *int64       `json:",omitempty"`
 	//MountMode *os.FileMode `json:",omitempty"`
 }
 
 type AppliedPluginsPattern struct {
-	Not bool `json:",omitempty"`
-
-	Exists         []AppliedPluginPattern `json:",omitempty"`
-	All            []AppliedPluginPattern `json:",omitempty"`
-	AnySequence    []AppliedPluginPattern `json:",omitempty"`
-	TopSequence    []AppliedPluginPattern `json:",omitempty"`
-	BottomSequence []AppliedPluginPattern `json:",omitempty"`
-	RelativeOrder  []AppliedPluginPattern `json:",omitempty"`
+	Exists            []AppliedPluginPattern `json:",omitempty"`
+	NotExists         []AppliedPluginPattern `json:",omitempty"`
+	All               []AppliedPluginPattern `json:",omitempty"`
+	NotAll            []AppliedPluginPattern `json:",omitempty"`
+	AnySequence       []AppliedPluginPattern `json:",omitempty"`
+	NotAnySequence    []AppliedPluginPattern `json:",omitempty"`
+	TopSequence       []AppliedPluginPattern `json:",omitempty"`
+	NotTopSequence    []AppliedPluginPattern `json:",omitempty"`
+	BottomSequence    []AppliedPluginPattern `json:",omitempty"`
+	NotBottomSequence []AppliedPluginPattern `json:",omitempty"`
+	RelativeOrder     []AppliedPluginPattern `json:",omitempty"`
+	NotRelativeOrder  []AppliedPluginPattern `json:",omitempty"`
 }
 
 type AppliedPluginPattern struct {
-	Name       StringPattern               `json:",omitempty"`
+	Name       []StringPattern             `json:",omitempty"`
 	MountPoint MountPointAttachmentPattern `json:",omitempty"`
 }
 
 type MountPointAttachmentPattern struct {
-	EffectiveSource StringPattern `json:",omitempty"`
+	EffectiveSource []StringPattern `json:",omitempty"`
 
 	// from api/types/mount
 	Consistency *mount.Consistency `json:",omitempty"`

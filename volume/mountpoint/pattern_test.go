@@ -322,7 +322,7 @@ func TestMountPointAttachmentPattern(t *testing.T) {
 	require.Equal(t, true, mountPointAttachmentPatternMatches(pattern, att))
 
 	pattern = MountPointAttachmentPattern{
-		EffectiveSource: StringPattern{Exactly: "/new_dir"},
+		EffectiveSource: []StringPattern{{Exactly: "/new_dir"}},
 	}
 	att = MountPointAttachment{}
 	require.Equal(t, false, mountPointAttachmentPatternMatches(pattern, att))
@@ -355,7 +355,7 @@ func TestAppliedPluginPattern(t *testing.T) {
 	require.Equal(t, true, appliedPluginPatternMatches(pattern, plugin))
 
 	pattern = AppliedPluginPattern{
-		Name: StringPattern{Exactly: "plugin"},
+		Name: []StringPattern{{Exactly: "plugin"}},
 	}
 	plugin = AppliedPlugin{}
 	require.Equal(t, false, appliedPluginPatternMatches(pattern, plugin))
@@ -368,7 +368,7 @@ func TestAppliedPluginPattern(t *testing.T) {
 
 	pattern = AppliedPluginPattern{
 		MountPoint: MountPointAttachmentPattern{
-			EffectiveSource: StringPattern{PathPrefix: "/new"},
+			EffectiveSource: []StringPattern{{PathPrefix: "/new"}},
 		},
 	}
 	plugin = AppliedPlugin{}
@@ -383,18 +383,33 @@ func TestAppliedPluginPattern(t *testing.T) {
 
 func testAppliedPluginsPatternInverse(pattern AppliedPluginsPattern, f func(pattern AppliedPluginsPattern, tru, fals bool)) {
 	f(pattern, true, false)
-	pattern.Not = true
+	pattern.NotExists = pattern.Exists
+	pattern.Exists = []AppliedPluginPattern{}
+	pattern.NotAll = pattern.All
+	pattern.All = []AppliedPluginPattern{}
+	pattern.NotAnySequence = pattern.AnySequence
+	pattern.AnySequence = []AppliedPluginPattern{}
+	pattern.NotTopSequence = pattern.TopSequence
+	pattern.TopSequence = []AppliedPluginPattern{}
+	pattern.NotBottomSequence = pattern.BottomSequence
+	pattern.BottomSequence = []AppliedPluginPattern{}
+	pattern.NotRelativeOrder = pattern.RelativeOrder
+	pattern.RelativeOrder = []AppliedPluginPattern{}
 	f(pattern, false, true)
 }
 
 func TestAppliedPluginsPatternExists(t *testing.T) {
 	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
 		Exists: []AppliedPluginPattern{
-			{Name: StringPattern{Exactly: "plugin0"}},
+			{Name: []StringPattern{{Exactly: "plugin0"}}},
 		},
 	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
 		list := []AppliedPlugin{}
 		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
+		list = []AppliedPlugin{
+			{Name: "plugin0"},
+		}
+		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
 		list = []AppliedPlugin{
 			{Name: "plugin0"},
 			{Name: "plugin1"},
@@ -404,8 +419,8 @@ func TestAppliedPluginsPatternExists(t *testing.T) {
 
 	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
 		Exists: []AppliedPluginPattern{
-			{Name: StringPattern{Exactly: "plugin0"}},
-			{Name: StringPattern{Exactly: "plugin1"}},
+			{Name: []StringPattern{{Exactly: "plugin0"}}},
+			{Name: []StringPattern{{Exactly: "plugin1"}}},
 		},
 	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
 		list := []AppliedPlugin{}
@@ -429,7 +444,7 @@ func TestAppliedPluginsPatternExists(t *testing.T) {
 func TestAppliedPluginsPatternAll(t *testing.T) {
 	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
 		All: []AppliedPluginPattern{
-			{Name: StringPattern{Exactly: "plugin0"}},
+			{Name: []StringPattern{{Exactly: "plugin0"}}},
 		},
 	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
 		list := []AppliedPlugin{}
@@ -443,8 +458,8 @@ func TestAppliedPluginsPatternAll(t *testing.T) {
 
 	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
 		All: []AppliedPluginPattern{
-			{Name: StringPattern{Suffix: "_"}},
-			{Name: StringPattern{Prefix: "p"}},
+			{Name: []StringPattern{{Suffix: "_"}}},
+			{Name: []StringPattern{{Prefix: "p"}}},
 		},
 	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
 		list := []AppliedPlugin{}
@@ -475,8 +490,8 @@ func TestAppliedPluginsPatternAll(t *testing.T) {
 func TestAppliedPluginsPatternAnySequence(t *testing.T) {
 	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
 		AnySequence: []AppliedPluginPattern{
-			{Name: StringPattern{Exactly: "plugin1"}},
-			{Name: StringPattern{Exactly: "plugin2"}},
+			{Name: []StringPattern{{Exactly: "plugin1"}}},
+			{Name: []StringPattern{{Exactly: "plugin2"}}},
 		},
 	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
 		list := []AppliedPlugin{}
@@ -527,8 +542,8 @@ func TestAppliedPluginsPatternAnySequence(t *testing.T) {
 func TestAppliedPluginsPatternTopSequence(t *testing.T) {
 	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
 		TopSequence: []AppliedPluginPattern{
-			{Name: StringPattern{Exactly: "plugin1"}},
-			{Name: StringPattern{Exactly: "plugin2"}},
+			{Name: []StringPattern{{Exactly: "plugin1"}}},
+			{Name: []StringPattern{{Exactly: "plugin2"}}},
 		},
 	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
 		list := []AppliedPlugin{}
@@ -566,8 +581,8 @@ func TestAppliedPluginsPatternTopSequence(t *testing.T) {
 func TestAppliedPluginsPatternBottomSequence(t *testing.T) {
 	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
 		BottomSequence: []AppliedPluginPattern{
-			{Name: StringPattern{Exactly: "plugin1"}},
-			{Name: StringPattern{Exactly: "plugin2"}},
+			{Name: []StringPattern{{Exactly: "plugin1"}}},
+			{Name: []StringPattern{{Exactly: "plugin2"}}},
 		},
 	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
 		list := []AppliedPlugin{}
@@ -605,8 +620,8 @@ func TestAppliedPluginsPatternBottomSequence(t *testing.T) {
 func TestAppliedPluginsPatternRelativeOrder(t *testing.T) {
 	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
 		RelativeOrder: []AppliedPluginPattern{
-			{Name: StringPattern{Exactly: "plugin1"}},
-			{Name: StringPattern{Exactly: "plugin2"}},
+			{Name: []StringPattern{{Exactly: "plugin1"}}},
+			{Name: []StringPattern{{Exactly: "plugin2"}}},
 		},
 	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
 		list := []AppliedPlugin{}
@@ -689,27 +704,27 @@ func TestPattern(t *testing.T) {
 	pattern := MountPointPattern{}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		EffectiveSource: &StringPattern{Exactly: "/src"},
+		EffectiveSource: []StringPattern{{Exactly: "/src"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		EffectiveSource: &StringPattern{Not: true, Exactly: "/src"},
+		EffectiveSource: []StringPattern{{Not: true, Exactly: "/src"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Source: &StringPattern{Exactly: "/src"},
+		Source: []StringPattern{{Exactly: "/src"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Source: &StringPattern{Not: true, Exactly: "/src"},
+		Source: []StringPattern{{Not: true, Exactly: "/src"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Destination: &StringPattern{PathPrefix: "/mnt"},
+		Destination: []StringPattern{{PathPrefix: "/mnt"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Destination: &StringPattern{Not: true, PathPrefix: "/mnt"},
+		Destination: []StringPattern{{Not: true, PathPrefix: "/mnt"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	tru := true
@@ -723,19 +738,19 @@ func TestPattern(t *testing.T) {
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Name: &StringPattern{Exactly: "MyVolume"},
+		Name: []StringPattern{{Exactly: "MyVolume"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Name: &StringPattern{Not: true, Exactly: "MyVolume"},
+		Name: []StringPattern{{Not: true, Exactly: "MyVolume"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Driver: &StringPattern{Exactly: "local"},
+		Driver: []StringPattern{{Exactly: "local"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Driver: &StringPattern{Not: true, Exactly: "local"},
+		Driver: []StringPattern{{Not: true, Exactly: "local"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	volume := TypeVolume
@@ -749,11 +764,11 @@ func TestPattern(t *testing.T) {
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Mode: &StringPattern{Contains: "o=bind"},
+		Mode: []StringPattern{{Contains: "o=bind"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Mode: &StringPattern{Not: true, Contains: "o=bind"},
+		Mode: []StringPattern{{Not: true, Contains: "o=bind"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	propagationShared := mount.PropagationShared
@@ -767,28 +782,27 @@ func TestPattern(t *testing.T) {
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		ID: &StringPattern{Exactly: "0123456789abcdef"},
+		ID: []StringPattern{{Exactly: "0123456789abcdef"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		ID: &StringPattern{Not: true, Exactly: "0123456789abcdef"},
+		ID: []StringPattern{{Not: true, Exactly: "0123456789abcdef"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
 	pattern = MountPointPattern{
 		AppliedPlugins: &AppliedPluginsPattern{
 			Exists: []AppliedPluginPattern{
-				{Name: StringPattern{Exactly: "mountPointPlugin0"}},
+				{Name: []StringPattern{{Exactly: "mountPointPlugin0"}}},
 			},
 		},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
 		AppliedPlugins: &AppliedPluginsPattern{
-			Not: true,
-			Exists: []AppliedPluginPattern{
-				{Name: StringPattern{Exactly: "mountPointPlugin0"}},
-			},
+			NotExists: []AppliedPluginPattern{{
+				Name: []StringPattern{{Exactly: "mountPointPlugin0"}},
+			}},
 		},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
@@ -804,38 +818,38 @@ func TestPattern(t *testing.T) {
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Labels: &StringMapPattern{
+		Labels: []StringMapPattern{{
 			Exists: map[StringPattern]*StringPattern{
 				{Exactly: "label0"}: nil,
 			},
-		},
+		}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		Labels: &StringMapPattern{
+		Labels: []StringMapPattern{{
 			Not: true,
 			Exists: map[StringPattern]*StringPattern{
 				{Exactly: "label0"}: nil,
 			},
-		},
+		}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
 	pattern = MountPointPattern{
-		DriverOptions: &StringMapPattern{
+		DriverOptions: []StringMapPattern{{
 			Exists: map[StringPattern]*StringPattern{
 				{Exactly: "opt0"}: nil,
 			},
-		},
+		}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		DriverOptions: &StringMapPattern{
+		DriverOptions: []StringMapPattern{{
 			Not: true,
 			Exists: map[StringPattern]*StringPattern{
 				{Exactly: "opt0"}: nil,
 			},
-		},
+		}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	localScope := LocalScope
