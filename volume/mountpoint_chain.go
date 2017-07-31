@@ -109,7 +109,12 @@ func (c *MountPointChain) unwindAttachOnErr(pluginName, container string, mounts
 }
 
 // unwind is used to detach all plugins participating in a container's
-// mount points
+// mount points. Plugins are detached in the opposite order that they
+// are attached. Because the plugin chain can change dynamically (both
+// during and after mount setup), not all plugins apply to all mounts,
+// and plugin application is local to each mount point, we use a
+// counter (clock) to keep track of the order that plugins were
+// applied in the mount point applied plugin stacks.
 func unwind(container string, mounts []*MountPoint) error {
 	var err error
 	var plugin *mountpoint.Plugin
@@ -118,6 +123,8 @@ func unwind(container string, mounts []*MountPoint) error {
 	for moreToUnwind {
 		maxClock := 0
 		moreToUnwind = false
+
+		// find the clock value of the next plugin to detach
 		for _, mount := range mounts {
 			maxClock = max(mount.TopClock(), maxClock)
 		}
@@ -125,12 +132,18 @@ func unwind(container string, mounts []*MountPoint) error {
 		if maxClock > 0 {
 			moreToUnwind = true
 			for _, mount := range mounts {
+				// if the top plugin on this mount isn't the next to
+				// detach, skip this mount
 				if mount.TopClock() < maxClock {
 					continue
 				}
 
 				appliedPlugin := mount.PopPlugin()
 				if appliedPlugin != nil {
+					// if we don't yet have the plugin object, get it
+					// otherwise, check that the name of the applied
+					// plugin for this mount is indeed the same as our
+					// plugin object
 					if plugin == nil {
 						p, e := appliedPlugin.Plugin()
 						if e != nil {
@@ -143,6 +156,8 @@ func unwind(container string, mounts []*MountPoint) error {
 					}
 				}
 			}
+			// send the plugin the mount point detach request and deal
+			// with both protocol errors and detachment errors
 			request := &mountpoint.DetachRequest{container}
 			response, e := (*plugin).MountPointDetach(request)
 			if e != nil {
