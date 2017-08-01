@@ -33,16 +33,16 @@ const (
 	MountPointAPIImplements = "mountpoint"
 )
 
-// PropertiesRequest holds a mount point plugin properties query
+// PropertiesRequest holds a mount point middleware properties query
 type PropertiesRequest struct {
 }
 
-// PropertiesResponse holds some static properties of the plugin
+// PropertiesResponse holds some static properties of the middleware
 type PropertiesResponse struct {
 	// Success indicates whether the properties query was successful
 	Success bool
 
-	// Patterns is the DNF pattern set for which this plugin receives
+	// Patterns is the DNF pattern set for which this middleware receives
 	// interposition requests
 	Patterns []MountPointPattern
 
@@ -50,25 +50,25 @@ type PropertiesResponse struct {
 	Err string `json:",omitempty"`
 }
 
-// AttachRequest holds data required for mount point plugin attachment interposition
+// AttachRequest holds data required for mount point middleware attachment interposition
 type AttachRequest struct {
 	ID     string
 	Mounts []*MountPoint
 }
 
-// AttachResponse represents mount point plugin response
+// AttachResponse represents mount point middleware response
 type AttachResponse struct {
 	// Success indicates whether the mount point was successful
 	Success bool
 
-	// Attachments contains information about the plugin's participation with the mount
+	// Attachments contains information about the middlware's participation with the mount
 	Attachments []Attachment `json:",omitempty"`
 
 	// Err stores a message in case there's an error
 	Err string `json:",omitempty"`
 }
 
-// Attachment describes how the plugin will interact with the mount
+// Attachment describes how the middleware will interact with the mount
 type Attachment struct {
 	Attach     bool
 	MountPoint MountPointAttachment `json:",omitempty"`
@@ -82,12 +82,12 @@ type MountPointAttachment struct {
 	//Labels      map[string]string `json:",omitempty"`
 }
 
-// DetachRequest holds data required for mount point plugin detachment interposition
+// DetachRequest holds data required for mount point middleware detachment interposition
 type DetachRequest struct {
 	ID string
 }
 
-// DetachResponse represents mount point plugin response
+// DetachResponse represents mount point middleware response
 type DetachResponse struct {
 	// Success indicates whether detaching the mount point was successful
 	Success bool
@@ -100,7 +100,7 @@ type DetachResponse struct {
 }
 
 // MountPoint is the representation of a container mount point exposed
-// to mount point plugins. MountPointPattern and MountPointAttachment
+// to mount point middleware. MountPointPattern and MountPointAttachment
 // should be the same shape as this type.
 type MountPoint struct {
 	EffectiveSource string
@@ -115,7 +115,7 @@ type MountPoint struct {
 	Propagation mount.Propagation `json:",omitempty"`
 	ID          string            `json:",omitempty"`
 
-	AppliedPlugins []AppliedPlugin
+	AppliedMiddleware []AppliedMiddleware
 
 	// from api/types/mount
 	Consistency mount.Consistency `json:",omitempty"`
@@ -138,10 +138,10 @@ const (
 	GlobalScope Scope = "global"
 )
 
-// AppliedPlugin is the representation of a mount point plugin already
-// applied to a mount point as exposed to later mount point plugins in
+// AppliedMiddleware is the representation of mount point middleware already
+// applied to a mount point as exposed to later mount point middleware in
 // the stack
-type AppliedPlugin struct {
+type AppliedMiddleware struct {
 	Name       string
 	MountPoint MountPointAttachment
 }
@@ -159,7 +159,7 @@ type MountPointPattern struct {
 	Propagation *mount.Propagation `json:",omitempty"`
 	ID          []StringPattern    `json:",omitempty"`
 
-	AppliedPlugins *AppliedPluginsPattern
+	AppliedMiddleware *AppliedMiddlewareStackPattern
 
 	// from api/types/mount
 	Consistency *mount.Consistency `json:",omitempty"`
@@ -172,22 +172,22 @@ type MountPointPattern struct {
 	//MountMode *os.FileMode `json:",omitempty"`
 }
 
-type AppliedPluginsPattern struct {
-	Exists            []AppliedPluginPattern `json:",omitempty"`
-	NotExists         []AppliedPluginPattern `json:",omitempty"`
-	All               []AppliedPluginPattern `json:",omitempty"`
-	NotAll            []AppliedPluginPattern `json:",omitempty"`
-	AnySequence       []AppliedPluginPattern `json:",omitempty"`
-	NotAnySequence    []AppliedPluginPattern `json:",omitempty"`
-	TopSequence       []AppliedPluginPattern `json:",omitempty"`
-	NotTopSequence    []AppliedPluginPattern `json:",omitempty"`
-	BottomSequence    []AppliedPluginPattern `json:",omitempty"`
-	NotBottomSequence []AppliedPluginPattern `json:",omitempty"`
-	RelativeOrder     []AppliedPluginPattern `json:",omitempty"`
-	NotRelativeOrder  []AppliedPluginPattern `json:",omitempty"`
+type AppliedMiddlewareStackPattern struct {
+	Exists            []AppliedMiddlewarePattern `json:",omitempty"`
+	NotExists         []AppliedMiddlewarePattern `json:",omitempty"`
+	All               []AppliedMiddlewarePattern `json:",omitempty"`
+	NotAll            []AppliedMiddlewarePattern `json:",omitempty"`
+	AnySequence       []AppliedMiddlewarePattern `json:",omitempty"`
+	NotAnySequence    []AppliedMiddlewarePattern `json:",omitempty"`
+	TopSequence       []AppliedMiddlewarePattern `json:",omitempty"`
+	NotTopSequence    []AppliedMiddlewarePattern `json:",omitempty"`
+	BottomSequence    []AppliedMiddlewarePattern `json:",omitempty"`
+	NotBottomSequence []AppliedMiddlewarePattern `json:",omitempty"`
+	RelativeOrder     []AppliedMiddlewarePattern `json:",omitempty"`
+	NotRelativeOrder  []AppliedMiddlewarePattern `json:",omitempty"`
 }
 
-type AppliedPluginPattern struct {
+type AppliedMiddlewarePattern struct {
 	Name       []StringPattern             `json:",omitempty"`
 	MountPoint MountPointAttachmentPattern `json:",omitempty"`
 }

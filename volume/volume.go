@@ -123,8 +123,8 @@ type MountPoint struct {
 	// Spec is a copy of the API request that created this mount.
 	Spec mounttypes.Mount
 
-	// AppliedPlugins is the stack of mount point plugins that have been applied to this mount
-	AppliedPlugins []AppliedMountPointPlugin
+	// AppliedMiddleware is the stack of mount point middleware that has been applied to this mount
+	AppliedMiddleware []AppliedMountPointMiddleware
 
 	// Track usage of this mountpoint
 	// Specifically needed for containers which are running and calls to `docker cp`

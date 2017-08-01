@@ -644,7 +644,7 @@ func NewDaemon(config *config.Config, registryService registry.Service, containe
 
 	config.MountPointChain, err = volume.NewMountPointChain(config.MountPointPlugins, pluginStore)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't create mount point plugin chain")
+		return nil, errors.Wrap(err, "couldn't create mount point middleware chain")
 	}
 
 	// Plugin system initialization should happen before restore. Do not change order.

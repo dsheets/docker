@@ -343,330 +343,330 @@ func TestMountPointAttachmentPattern(t *testing.T) {
 	require.Equal(t, true, mountPointAttachmentPatternMatches(pattern, att))
 }
 
-func TestAppliedPluginPattern(t *testing.T) {
-	pattern := AppliedPluginPattern{}
-	plugin := AppliedPlugin{}
-	require.Equal(t, true, appliedPluginPatternMatches(pattern, plugin))
-	plugin = AppliedPlugin{Name: "plugin"}
-	require.Equal(t, true, appliedPluginPatternMatches(pattern, plugin))
-	plugin = AppliedPlugin{
+func TestAppliedMiddlewarePattern(t *testing.T) {
+	pattern := AppliedMiddlewarePattern{}
+	middleware := AppliedMiddleware{}
+	require.Equal(t, true, appliedMiddlewarePatternMatches(pattern, middleware))
+	middleware = AppliedMiddleware{Name: "plugin:plugin"}
+	require.Equal(t, true, appliedMiddlewarePatternMatches(pattern, middleware))
+	middleware = AppliedMiddleware{
 		MountPoint: MountPointAttachment{EffectiveSource: "/new/dir"},
 	}
-	require.Equal(t, true, appliedPluginPatternMatches(pattern, plugin))
+	require.Equal(t, true, appliedMiddlewarePatternMatches(pattern, middleware))
 
-	pattern = AppliedPluginPattern{
-		Name: []StringPattern{{Exactly: "plugin"}},
+	pattern = AppliedMiddlewarePattern{
+		Name: []StringPattern{{Exactly: "plugin:plugin"}},
 	}
-	plugin = AppliedPlugin{}
-	require.Equal(t, false, appliedPluginPatternMatches(pattern, plugin))
-	plugin = AppliedPlugin{Name: "plugin"}
-	require.Equal(t, true, appliedPluginPatternMatches(pattern, plugin))
-	plugin = AppliedPlugin{
+	middleware = AppliedMiddleware{}
+	require.Equal(t, false, appliedMiddlewarePatternMatches(pattern, middleware))
+	middleware = AppliedMiddleware{Name: "plugin:plugin"}
+	require.Equal(t, true, appliedMiddlewarePatternMatches(pattern, middleware))
+	middleware = AppliedMiddleware{
 		MountPoint: MountPointAttachment{EffectiveSource: "/new/dir"},
 	}
-	require.Equal(t, false, appliedPluginPatternMatches(pattern, plugin))
+	require.Equal(t, false, appliedMiddlewarePatternMatches(pattern, middleware))
 
-	pattern = AppliedPluginPattern{
+	pattern = AppliedMiddlewarePattern{
 		MountPoint: MountPointAttachmentPattern{
 			EffectiveSource: []StringPattern{{PathPrefix: "/new"}},
 		},
 	}
-	plugin = AppliedPlugin{}
-	require.Equal(t, false, appliedPluginPatternMatches(pattern, plugin))
-	plugin = AppliedPlugin{Name: "plugin"}
-	require.Equal(t, false, appliedPluginPatternMatches(pattern, plugin))
-	plugin = AppliedPlugin{
+	middleware = AppliedMiddleware{}
+	require.Equal(t, false, appliedMiddlewarePatternMatches(pattern, middleware))
+	middleware = AppliedMiddleware{Name: "plugin:plugin"}
+	require.Equal(t, false, appliedMiddlewarePatternMatches(pattern, middleware))
+	middleware = AppliedMiddleware{
 		MountPoint: MountPointAttachment{EffectiveSource: "/new/dir"},
 	}
-	require.Equal(t, true, appliedPluginPatternMatches(pattern, plugin))
+	require.Equal(t, true, appliedMiddlewarePatternMatches(pattern, middleware))
 }
 
-func testAppliedPluginsPatternInverse(pattern AppliedPluginsPattern, f func(pattern AppliedPluginsPattern, tru, fals bool)) {
+func testAppliedMiddlewareStackPatternInverse(pattern AppliedMiddlewareStackPattern, f func(pattern AppliedMiddlewareStackPattern, tru, fals bool)) {
 	f(pattern, true, false)
 	pattern.NotExists = pattern.Exists
-	pattern.Exists = []AppliedPluginPattern{}
+	pattern.Exists = []AppliedMiddlewarePattern{}
 	pattern.NotAll = pattern.All
-	pattern.All = []AppliedPluginPattern{}
+	pattern.All = []AppliedMiddlewarePattern{}
 	pattern.NotAnySequence = pattern.AnySequence
-	pattern.AnySequence = []AppliedPluginPattern{}
+	pattern.AnySequence = []AppliedMiddlewarePattern{}
 	pattern.NotTopSequence = pattern.TopSequence
-	pattern.TopSequence = []AppliedPluginPattern{}
+	pattern.TopSequence = []AppliedMiddlewarePattern{}
 	pattern.NotBottomSequence = pattern.BottomSequence
-	pattern.BottomSequence = []AppliedPluginPattern{}
+	pattern.BottomSequence = []AppliedMiddlewarePattern{}
 	pattern.NotRelativeOrder = pattern.RelativeOrder
-	pattern.RelativeOrder = []AppliedPluginPattern{}
+	pattern.RelativeOrder = []AppliedMiddlewarePattern{}
 	f(pattern, false, true)
 }
 
-func TestAppliedPluginsPatternExists(t *testing.T) {
-	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
-		Exists: []AppliedPluginPattern{
-			{Name: []StringPattern{{Exactly: "plugin0"}}},
+func TestAppliedMiddlewareStackPatternExists(t *testing.T) {
+	testAppliedMiddlewareStackPatternInverse(AppliedMiddlewareStackPattern{
+		Exists: []AppliedMiddlewarePattern{
+			{Name: []StringPattern{{Exactly: "plugin:plugin0"}}},
 		},
-	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
-		list := []AppliedPlugin{}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
+	}, func(pattern AppliedMiddlewareStackPattern, tru, fals bool) {
+		list := []AppliedMiddleware{}
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
-			{Name: "plugin1"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin1"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
 	})
 
-	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
-		Exists: []AppliedPluginPattern{
-			{Name: []StringPattern{{Exactly: "plugin0"}}},
-			{Name: []StringPattern{{Exactly: "plugin1"}}},
+	testAppliedMiddlewareStackPatternInverse(AppliedMiddlewareStackPattern{
+		Exists: []AppliedMiddlewarePattern{
+			{Name: []StringPattern{{Exactly: "plugin:plugin0"}}},
+			{Name: []StringPattern{{Exactly: "plugin:plugin1"}}},
 		},
-	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
-		list := []AppliedPlugin{}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
+	}, func(pattern AppliedMiddlewareStackPattern, tru, fals bool) {
+		list := []AppliedMiddleware{}
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
 		}
-		require.Equal(t, false, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
+		require.Equal(t, false, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
 		}
-		require.Equal(t, false, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
-			{Name: "plugin1"},
+		require.Equal(t, false, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin1"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
 	})
 }
 
-func TestAppliedPluginsPatternAll(t *testing.T) {
-	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
-		All: []AppliedPluginPattern{
-			{Name: []StringPattern{{Exactly: "plugin0"}}},
+func TestAppliedMiddlewareStackPatternAll(t *testing.T) {
+	testAppliedMiddlewareStackPatternInverse(AppliedMiddlewareStackPattern{
+		All: []AppliedMiddlewarePattern{
+			{Name: []StringPattern{{Exactly: "plugin:plugin0"}}},
 		},
-	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
-		list := []AppliedPlugin{}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
-			{Name: "plugin1"},
+	}, func(pattern AppliedMiddlewareStackPattern, tru, fals bool) {
+		list := []AppliedMiddleware{}
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin1"},
 		}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
 	})
 
-	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
-		All: []AppliedPluginPattern{
+	testAppliedMiddlewareStackPatternInverse(AppliedMiddlewareStackPattern{
+		All: []AppliedMiddlewarePattern{
 			{Name: []StringPattern{{Suffix: "_"}}},
-			{Name: []StringPattern{{Prefix: "p"}}},
+			{Name: []StringPattern{{Prefix: "plugin:p"}}},
 		},
-	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
-		list := []AppliedPlugin{}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
-			{Name: "plugin1"},
+	}, func(pattern AppliedMiddlewareStackPattern, tru, fals bool) {
+		list := []AppliedMiddleware{}
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin1"},
 		}
-		require.Equal(t, false, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0_"},
-			{Name: "plugin1_"},
+		require.Equal(t, false, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0_"},
+			{Name: "plugin:plugin1_"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0_"},
-			{Name: "plugin1"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0_"},
+			{Name: "plugin:plugin1"},
 		}
-		require.Equal(t, false, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0_"},
-			{Name: "_plugin1"},
+		require.Equal(t, false, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0_"},
+			{Name: "plugin:_plugin1"},
 		}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
 	})
 }
 
-func TestAppliedPluginsPatternAnySequence(t *testing.T) {
-	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
-		AnySequence: []AppliedPluginPattern{
-			{Name: []StringPattern{{Exactly: "plugin1"}}},
-			{Name: []StringPattern{{Exactly: "plugin2"}}},
+func TestAppliedMiddlewareStackPatternAnySequence(t *testing.T) {
+	testAppliedMiddlewareStackPatternInverse(AppliedMiddlewareStackPattern{
+		AnySequence: []AppliedMiddlewarePattern{
+			{Name: []StringPattern{{Exactly: "plugin:plugin1"}}},
+			{Name: []StringPattern{{Exactly: "plugin:plugin2"}}},
 		},
-	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
-		list := []AppliedPlugin{}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
+	}, func(pattern AppliedMiddlewareStackPattern, tru, fals bool) {
+		list := []AppliedMiddleware{}
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
 		}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin2"},
-			{Name: "plugin3"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
+			{Name: "plugin:plugin3"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
-			{Name: "plugin1"},
-			{Name: "plugin2"},
-			{Name: "plugin3"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
+			{Name: "plugin:plugin3"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin0"},
-			{Name: "plugin2"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
 	})
 }
 
-func TestAppliedPluginsPatternTopSequence(t *testing.T) {
-	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
-		TopSequence: []AppliedPluginPattern{
-			{Name: []StringPattern{{Exactly: "plugin1"}}},
-			{Name: []StringPattern{{Exactly: "plugin2"}}},
+func TestAppliedMiddlewareStackPatternTopSequence(t *testing.T) {
+	testAppliedMiddlewareStackPatternInverse(AppliedMiddlewareStackPattern{
+		TopSequence: []AppliedMiddlewarePattern{
+			{Name: []StringPattern{{Exactly: "plugin:plugin1"}}},
+			{Name: []StringPattern{{Exactly: "plugin:plugin2"}}},
 		},
-	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
-		list := []AppliedPlugin{}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
+	}, func(pattern AppliedMiddlewareStackPattern, tru, fals bool) {
+		list := []AppliedMiddleware{}
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
 		}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin2"},
-			{Name: "plugin3"},
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
+			{Name: "plugin:plugin3"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
 	})
 }
 
-func TestAppliedPluginsPatternBottomSequence(t *testing.T) {
-	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
-		BottomSequence: []AppliedPluginPattern{
-			{Name: []StringPattern{{Exactly: "plugin1"}}},
-			{Name: []StringPattern{{Exactly: "plugin2"}}},
+func TestAppliedMiddlewareStackPatternBottomSequence(t *testing.T) {
+	testAppliedMiddlewareStackPatternInverse(AppliedMiddlewareStackPattern{
+		BottomSequence: []AppliedMiddlewarePattern{
+			{Name: []StringPattern{{Exactly: "plugin:plugin1"}}},
+			{Name: []StringPattern{{Exactly: "plugin:plugin2"}}},
 		},
-	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
-		list := []AppliedPlugin{}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
+	}, func(pattern AppliedMiddlewareStackPattern, tru, fals bool) {
+		list := []AppliedMiddleware{}
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
 		}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin2"},
-			{Name: "plugin3"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
+			{Name: "plugin:plugin3"},
 		}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
 	})
 }
 
-func TestAppliedPluginsPatternRelativeOrder(t *testing.T) {
-	testAppliedPluginsPatternInverse(AppliedPluginsPattern{
-		RelativeOrder: []AppliedPluginPattern{
-			{Name: []StringPattern{{Exactly: "plugin1"}}},
-			{Name: []StringPattern{{Exactly: "plugin2"}}},
+func TestAppliedMiddlewareStackPatternRelativeOrder(t *testing.T) {
+	testAppliedMiddlewareStackPatternInverse(AppliedMiddlewareStackPattern{
+		RelativeOrder: []AppliedMiddlewarePattern{
+			{Name: []StringPattern{{Exactly: "plugin:plugin1"}}},
+			{Name: []StringPattern{{Exactly: "plugin:plugin2"}}},
 		},
-	}, func(pattern AppliedPluginsPattern, tru, fals bool) {
-		list := []AppliedPlugin{}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
+	}, func(pattern AppliedMiddlewareStackPattern, tru, fals bool) {
+		list := []AppliedMiddleware{}
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
 		}
-		require.Equal(t, fals, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, fals, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
-			{Name: "plugin1"},
-			{Name: "plugin2"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin2"},
-			{Name: "plugin3"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin2"},
+			{Name: "plugin:plugin3"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin0"},
-			{Name: "plugin2"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin0"},
-			{Name: "plugin1"},
-			{Name: "plugin0"},
-			{Name: "plugin2"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin2"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
-		list = []AppliedPlugin{
-			{Name: "plugin1"},
-			{Name: "plugin0"},
-			{Name: "plugin2"},
-			{Name: "plugin0"},
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
+		list = []AppliedMiddleware{
+			{Name: "plugin:plugin1"},
+			{Name: "plugin:plugin0"},
+			{Name: "plugin:plugin2"},
+			{Name: "plugin:plugin0"},
 		}
-		require.Equal(t, tru, appliedPluginsPatternMatches(pattern, list))
+		require.Equal(t, tru, appliedMiddlewareStackPatternMatches(pattern, list))
 	})
 }
 
@@ -683,9 +683,9 @@ func TestPattern(t *testing.T) {
 		Propagation:     mount.PropagationShared,
 		ID:              "0123456789abcdef",
 
-		AppliedPlugins: []AppliedPlugin{
-			{Name: "mountPointPlugin0"},
-			{Name: "mountPointPlugin1"},
+		AppliedMiddleware: []AppliedMiddleware{
+			{Name: "plugin:mountPointPlugin0"},
+			{Name: "plugin:mountPointPlugin1"},
 		},
 
 		Consistency: mount.ConsistencyCached,
@@ -791,17 +791,17 @@ func TestPattern(t *testing.T) {
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
 	pattern = MountPointPattern{
-		AppliedPlugins: &AppliedPluginsPattern{
-			Exists: []AppliedPluginPattern{
-				{Name: []StringPattern{{Exactly: "mountPointPlugin0"}}},
+		AppliedMiddleware: &AppliedMiddlewareStackPattern{
+			Exists: []AppliedMiddlewarePattern{
+				{Name: []StringPattern{{Exactly: "plugin:mountPointPlugin0"}}},
 			},
 		},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		AppliedPlugins: &AppliedPluginsPattern{
-			NotExists: []AppliedPluginPattern{{
-				Name: []StringPattern{{Exactly: "mountPointPlugin0"}},
+		AppliedMiddleware: &AppliedMiddlewareStackPattern{
+			NotExists: []AppliedMiddlewarePattern{{
+				Name: []StringPattern{{Exactly: "plugin:mountPointPlugin0"}},
 			}},
 		},
 	}

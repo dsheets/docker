@@ -63,7 +63,7 @@ func PatternMatches(pattern MountPointPattern, mount *MountPoint) bool {
 		}
 	}
 
-	if pattern.AppliedPlugins != nil && !appliedPluginsPatternMatches(*pattern.AppliedPlugins, mount.AppliedPlugins) {
+	if pattern.AppliedMiddleware != nil && !appliedMiddlewareStackPatternMatches(*pattern.AppliedMiddleware, mount.AppliedMiddleware) {
 		return false
 	}
 
@@ -90,58 +90,58 @@ func PatternMatches(pattern MountPointPattern, mount *MountPoint) bool {
 	return true
 }
 
-func appliedPluginsPatternMatches(pattern AppliedPluginsPattern, appliedPlugins []AppliedPlugin) bool {
+func appliedMiddlewareStackPatternMatches(pattern AppliedMiddlewareStackPattern, appliedMiddleware []AppliedMiddleware) bool {
 
-	if !pluginsExist(pattern.Exists, appliedPlugins, false) {
+	if !middlewareExist(pattern.Exists, appliedMiddleware, false) {
 		return false
 	}
-	if !pluginsExist(pattern.NotExists, appliedPlugins, true) {
-		return false
-	}
-
-	if !pluginsAll(pattern.All, appliedPlugins, false) {
-		return false
-	}
-	if !pluginsAll(pattern.NotAll, appliedPlugins, true) {
+	if !middlewareExist(pattern.NotExists, appliedMiddleware, true) {
 		return false
 	}
 
-	if !pluginsAnySequence(pattern.AnySequence, appliedPlugins, false) {
+	if !middlewareAll(pattern.All, appliedMiddleware, false) {
 		return false
 	}
-	if !pluginsAnySequence(pattern.NotAnySequence, appliedPlugins, true) {
-		return false
-	}
-
-	if !pluginsTopSequence(pattern.TopSequence, appliedPlugins, false) {
-		return false
-	}
-	if !pluginsTopSequence(pattern.NotTopSequence, appliedPlugins, true) {
+	if !middlewareAll(pattern.NotAll, appliedMiddleware, true) {
 		return false
 	}
 
-	if !pluginsBottomSequence(pattern.BottomSequence, appliedPlugins, false) {
+	if !middlewareAnySequence(pattern.AnySequence, appliedMiddleware, false) {
 		return false
 	}
-	if !pluginsBottomSequence(pattern.NotBottomSequence, appliedPlugins, true) {
+	if !middlewareAnySequence(pattern.NotAnySequence, appliedMiddleware, true) {
 		return false
 	}
 
-	if !pluginsRelativeOrder(pattern.RelativeOrder, appliedPlugins, false) {
+	if !middlewareTopSequence(pattern.TopSequence, appliedMiddleware, false) {
 		return false
 	}
-	if !pluginsRelativeOrder(pattern.NotRelativeOrder, appliedPlugins, true) {
+	if !middlewareTopSequence(pattern.NotTopSequence, appliedMiddleware, true) {
+		return false
+	}
+
+	if !middlewareBottomSequence(pattern.BottomSequence, appliedMiddleware, false) {
+		return false
+	}
+	if !middlewareBottomSequence(pattern.NotBottomSequence, appliedMiddleware, true) {
+		return false
+	}
+
+	if !middlewareRelativeOrder(pattern.RelativeOrder, appliedMiddleware, false) {
+		return false
+	}
+	if !middlewareRelativeOrder(pattern.NotRelativeOrder, appliedMiddleware, true) {
 		return false
 	}
 
 	return true
 }
 
-func pluginsExist(patterns []AppliedPluginPattern, plugins []AppliedPlugin, not bool) bool {
-	for _, pluginPattern := range patterns {
+func middlewareExist(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
+	for _, middlewarePattern := range patterns {
 		matched := false
-		for _, plugin := range plugins {
-			if appliedPluginPatternMatches(pluginPattern, plugin) {
+		for _, middleware := range middleware {
+			if appliedMiddlewarePatternMatches(middlewarePattern, middleware) {
 				matched = true
 				break
 			}
@@ -155,11 +155,11 @@ func pluginsExist(patterns []AppliedPluginPattern, plugins []AppliedPlugin, not 
 	return true
 }
 
-func pluginsAll(patterns []AppliedPluginPattern, plugins []AppliedPlugin, not bool) bool {
-	for _, pluginPattern := range patterns {
+func middlewareAll(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
+	for _, middlewarePattern := range patterns {
 		matched := true
-		for _, plugin := range plugins {
-			if !appliedPluginPatternMatches(pluginPattern, plugin) {
+		for _, middleware := range middleware {
+			if !appliedMiddlewarePatternMatches(middlewarePattern, middleware) {
 				matched = false
 				break
 			}
@@ -173,16 +173,16 @@ func pluginsAll(patterns []AppliedPluginPattern, plugins []AppliedPlugin, not bo
 	return true
 }
 
-func pluginsAnySequence(patterns []AppliedPluginPattern, plugins []AppliedPlugin, not bool) bool {
+func middlewareAnySequence(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
 	anySequenceCount := len(patterns)
-	appliedPluginCount := len(plugins)
+	appliedMiddlewareCount := len(middleware)
 	if anySequenceCount > 0 {
-		if anySequenceCount <= appliedPluginCount {
+		if anySequenceCount <= appliedMiddlewareCount {
 			found := false
-			for i := 0; i <= (appliedPluginCount - anySequenceCount); i++ {
+			for i := 0; i <= (appliedMiddlewareCount - anySequenceCount); i++ {
 				matched := true
-				for j, pluginPattern := range patterns {
-					if !appliedPluginPatternMatches(pluginPattern, plugins[i+j]) {
+				for j, middlewarePattern := range patterns {
+					if !appliedMiddlewarePatternMatches(middlewarePattern, middleware[i+j]) {
 						matched = false
 						break
 					}
@@ -203,14 +203,14 @@ func pluginsAnySequence(patterns []AppliedPluginPattern, plugins []AppliedPlugin
 	return true
 }
 
-func pluginsTopSequence(patterns []AppliedPluginPattern, plugins []AppliedPlugin, not bool) bool {
+func middlewareTopSequence(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
 	topSequenceCount := len(patterns)
-	appliedPluginCount := len(plugins)
+	appliedMiddlewareCount := len(middleware)
 	if topSequenceCount > 0 {
-		if topSequenceCount <= appliedPluginCount {
+		if topSequenceCount <= appliedMiddlewareCount {
 			matched := true
-			for i, pluginPattern := range patterns {
-				if !appliedPluginPatternMatches(pluginPattern, plugins[i]) {
+			for i, middlewarePattern := range patterns {
+				if !appliedMiddlewarePatternMatches(middlewarePattern, middleware[i]) {
 					matched = false
 					break
 				}
@@ -226,15 +226,15 @@ func pluginsTopSequence(patterns []AppliedPluginPattern, plugins []AppliedPlugin
 	return true
 }
 
-func pluginsBottomSequence(patterns []AppliedPluginPattern, plugins []AppliedPlugin, not bool) bool {
+func middlewareBottomSequence(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
 	bottomSequenceCount := len(patterns)
-	appliedPluginCount := len(plugins)
+	appliedMiddlewareCount := len(middleware)
 	if bottomSequenceCount > 0 {
-		if bottomSequenceCount <= appliedPluginCount {
+		if bottomSequenceCount <= appliedMiddlewareCount {
 			matched := true
-			start := appliedPluginCount - bottomSequenceCount
-			for i, pluginPattern := range patterns {
-				if !appliedPluginPatternMatches(pluginPattern, plugins[start+i]) {
+			start := appliedMiddlewareCount - bottomSequenceCount
+			for i, middlewarePattern := range patterns {
+				if !appliedMiddlewarePatternMatches(middlewarePattern, middleware[start+i]) {
 					matched = false
 					break
 				}
@@ -250,18 +250,18 @@ func pluginsBottomSequence(patterns []AppliedPluginPattern, plugins []AppliedPlu
 	return true
 }
 
-func pluginsRelativeOrder(patterns []AppliedPluginPattern, plugins []AppliedPlugin, not bool) bool {
+func middlewareRelativeOrder(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
 	relativeOrderCount := len(patterns)
-	appliedPluginCount := len(plugins)
+	appliedMiddlewareCount := len(middleware)
 	if relativeOrderCount > 0 {
-		if relativeOrderCount <= appliedPluginCount {
+		if relativeOrderCount <= appliedMiddlewareCount {
 			remainingPatterns := patterns
-			for _, plugin := range plugins {
+			for _, middleware := range middleware {
 				if len(remainingPatterns) == 0 {
 					break
 				}
 
-				if appliedPluginPatternMatches(remainingPatterns[0], plugin) {
+				if appliedMiddlewarePatternMatches(remainingPatterns[0], middleware) {
 					remainingPatterns = remainingPatterns[1:]
 				}
 			}
@@ -276,14 +276,14 @@ func pluginsRelativeOrder(patterns []AppliedPluginPattern, plugins []AppliedPlug
 	return true
 }
 
-func appliedPluginPatternMatches(pattern AppliedPluginPattern, appliedPlugin AppliedPlugin) bool {
+func appliedMiddlewarePatternMatches(pattern AppliedMiddlewarePattern, appliedMiddleware AppliedMiddleware) bool {
 	for _, spattern := range pattern.Name {
-		if !stringPatternMatches(spattern, appliedPlugin.Name) {
+		if !stringPatternMatches(spattern, appliedMiddleware.Name) {
 			return false
 		}
 	}
 
-	if !mountPointAttachmentPatternMatches(pattern.MountPoint, appliedPlugin.MountPoint) {
+	if !mountPointAttachmentPatternMatches(pattern.MountPoint, appliedMiddleware.MountPoint) {
 		return false
 	}
 

@@ -206,7 +206,7 @@ func (daemon *Daemon) Cleanup(container *container.Container) (success bool) {
 	}
 
 	if err := daemon.configStore.MountPointChain.DetachMounts(container.ID, container.MountPoints); err != nil {
-		logrus.Warnf("%s cleanup: failed to successfully detach mount point with plugin: %s", container.ID, err)
+		logrus.Warnf("%s cleanup: failed to successfully detach mount point with middleware: %s", container.ID, err)
 		success = false
 	}
 

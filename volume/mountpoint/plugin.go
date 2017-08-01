@@ -7,22 +7,8 @@ import (
 	"github.com/docker/docker/pkg/plugins"
 )
 
-// Plugin interposes local file system mount points
 type Plugin interface {
-	// Name returns the registered plugin name
-	Name() string
-
-	// Patterns returns the mount point patterns that this plugin interposes
-	Patterns() []MountPointPattern
-
-	// MountPointProperties returns the properties of the mount point plugin
-	MountPointProperties(*PropertiesRequest) (*PropertiesResponse, error)
-
-	// MountPointAttach prepares one or more mount points for a container
-	MountPointAttach(*AttachRequest) (*AttachResponse, error)
-
-	// MountPointDetach releases one or more mount points from a container
-	MountPointDetach(*DetachRequest) (*DetachResponse, error)
+	Middleware
 }
 
 var pluginCache map[string]Plugin
@@ -59,6 +45,7 @@ func GetPluginGetter() plugingetter.PluginGetter {
 }
 
 // mountPointPlugin is an internal adapter to the docker plugin system
+// and implements the Middleware interface
 type mountPointPlugin struct {
 	plugin   *plugins.Client
 	name     string
@@ -106,6 +93,10 @@ func NewMountPointPlugin(name string) (Plugin, error) {
 }
 
 func (b *mountPointPlugin) Name() string {
+	return "plugin:" + b.name
+}
+
+func (b *mountPointPlugin) PluginName() string {
 	return b.name
 }
 

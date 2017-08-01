@@ -11,11 +11,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-// MountPointChain uses a list of plugins to interpose on mount point
-// attachment and detachment
+// MountPointChain uses a list of mount point middleware to interpose
+// on mount point attachment and detachment
 type MountPointChain struct {
-	mu      sync.Mutex
-	plugins []mountpoint.Plugin
+	mu         sync.Mutex
+	middleware []mountpoint.Middleware
 }
 
 // NewMountPointChain creates a new Chain with a slice of plugin names.
@@ -25,28 +25,32 @@ func NewMountPointChain(names []string, pg plugingetter.PluginGetter) (*MountPoi
 	if err != nil {
 		return nil, err
 	}
+	middleware := make([]mountpoint.Middleware, len(plugins))
+	for i := range plugins {
+		middleware[i] = plugins[i]
+	}
 	return &MountPointChain{
-		plugins: plugins,
+		middleware: middleware,
 	}, nil
 }
 
-// AttachMounts runs a list of mount attachments through a mount point plugin chain
+// AttachMounts runs a list of mount attachments through a mount point middleware chain
 func (c *MountPointChain) AttachMounts(id string, mounts []*MountPoint) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	var mountPointClock int
 
-	for _, plugin := range c.plugins {
+	for _, middleware := range c.middleware {
 		var selectedMounts []*MountPoint
-		patterns := plugin.Patterns()
+		patterns := middleware.Patterns()
 
 		mountPointClock++
 
-		// select mounts for this plugin
+		// select mounts for this middleware
 		for _, mount := range mounts {
 			for _, pattern := range patterns {
-				if mountpoint.PatternMatches(pattern, pluginMountPointOfMountPoint(mount)) {
+				if mountpoint.PatternMatches(pattern, middlewareMountPointOfMountPoint(mount)) {
 					selectedMounts = append(selectedMounts, mount)
 					break
 				}
@@ -54,27 +58,27 @@ func (c *MountPointChain) AttachMounts(id string, mounts []*MountPoint) error {
 		}
 
 		if len(selectedMounts) > 0 {
-			// send attachment request to the plugin
+			// send attachment request to the middleware
 			var pmounts []*mountpoint.MountPoint
 			for _, selectedMount := range selectedMounts {
-				pmounts = append(pmounts, pluginMountPointOfMountPoint(selectedMount))
+				pmounts = append(pmounts, middlewareMountPointOfMountPoint(selectedMount))
 			}
 			request := &mountpoint.AttachRequest{id, pmounts}
-			response, err := plugin.MountPointAttach(request)
+			response, err := middleware.MountPointAttach(request)
 			if err != nil {
-				return c.unwindAttachOnErr(plugin.Name(), id, mounts, err)
+				return c.unwindAttachOnErr(middleware.Name(), id, mounts, err)
 			}
 			if !response.Success {
-				return c.unwindAttachOnErr(plugin.Name(), id, mounts, errors.New(response.Err))
+				return c.unwindAttachOnErr(middleware.Name(), id, mounts, errors.New(response.Err))
 			}
 
-			// annotate the mount points with the applied plugin
+			// annotate the mount points with the applied middleware
 			for k, attachment := range response.Attachments {
 				if k >= len(selectedMounts) {
 					break
 				}
 				if attachment.Attach {
-					selectedMounts[k].PushPlugin(plugin, attachment.MountPoint, mountPointClock)
+					selectedMounts[k].PushMiddleware(middleware, attachment.MountPoint, mountPointClock)
 				}
 			}
 		}
@@ -83,7 +87,7 @@ func (c *MountPointChain) AttachMounts(id string, mounts []*MountPoint) error {
 	return nil
 }
 
-// DetachMounts detaches mounts from a mount point plugin chain
+// DetachMounts detaches mounts from a mount point middlware chain
 func (c *MountPointChain) DetachMounts(container string, mounts map[string]*MountPoint) error {
 	var list []*MountPoint
 	for _, mp := range mounts {
@@ -94,9 +98,9 @@ func (c *MountPointChain) DetachMounts(container string, mounts map[string]*Moun
 
 // unwindAttachOnErr will clean up previous attachments if an error
 // occurs during attachment
-func (c *MountPointChain) unwindAttachOnErr(pluginName, container string, mounts []*MountPoint, err error) (ret error) {
+func (c *MountPointChain) unwindAttachOnErr(middlewareName, container string, mounts []*MountPoint, err error) (ret error) {
 	defer func() {
-		ret = errors.Wrap(ret, "plugin "+pluginName+" failed with error")
+		ret = errors.Wrap(ret, "middleware "+middlewareName+" failed with error")
 	}()
 
 	e := unwind(container, mounts)
@@ -108,23 +112,24 @@ func (c *MountPointChain) unwindAttachOnErr(pluginName, container string, mounts
 	return ret
 }
 
-// unwind is used to detach all plugins participating in a container's
-// mount points. Plugins are detached in the opposite order that they
-// are attached. Because the plugin chain can change dynamically (both
-// during and after mount setup), not all plugins apply to all mounts,
-// and plugin application is local to each mount point, we use a
-// counter (clock) to keep track of the order that plugins were
-// applied in the mount point applied plugin stacks.
+// unwind is used to detach all middleware participating in a
+// container's mount points. Middleware are detached in the opposite
+// order that they were attached. Because the middlware chain can
+// change dynamically, the applied mount point stack for a container
+// changes during setup, not all middleware apply to all mounts, and
+// middleware application is local to each mount point, we use a counter
+// (clock) to keep track of the order that middlware were applied in the
+// mount point applied middleware stacks.
 func unwind(container string, mounts []*MountPoint) error {
 	var err error
-	var plugin *mountpoint.Plugin
+	var middleware *mountpoint.Middleware
 	moreToUnwind := true
 
 	for moreToUnwind {
 		maxClock := 0
 		moreToUnwind = false
 
-		// find the clock value of the next plugin to detach
+		// find the clock value of the next middleware to detach
 		for _, mount := range mounts {
 			maxClock = max(mount.TopClock(), maxClock)
 		}
@@ -132,47 +137,47 @@ func unwind(container string, mounts []*MountPoint) error {
 		if maxClock > 0 {
 			moreToUnwind = true
 			for _, mount := range mounts {
-				// if the top plugin on this mount isn't the next to
+				// if the top middleware on this mount isn't the next to
 				// detach, skip this mount
 				if mount.TopClock() < maxClock {
 					continue
 				}
 
-				appliedPlugin := mount.PopPlugin()
-				if appliedPlugin != nil {
-					// if we don't yet have the plugin object, get it
+				appliedMiddleware := mount.PopMiddleware()
+				if appliedMiddleware != nil {
+					// if we don't yet have the middleware object, get it
 					// otherwise, check that the name of the applied
-					// plugin for this mount is indeed the same as our
-					// plugin object
-					if plugin == nil {
-						p, e := appliedPlugin.Plugin()
+					// middleware for this mount is indeed the same as our
+					// middleware object
+					if middleware == nil {
+						m, e := appliedMiddleware.Middleware()
 						if e != nil {
-							errString := fmt.Sprintf("unwind plugin retrieval error: \"%s\"", e)
+							errString := fmt.Sprintf("unwind middleware retrieval error: \"%s\"", e)
 							return stackError(err, errString)
 						}
-						plugin = p
-					} else if (*plugin).Name() != appliedPlugin.Name {
-						return fmt.Errorf("plugin inconsistency %s != %s", (*plugin).Name(), appliedPlugin.Name)
+						middleware = m
+					} else if (*middleware).Name() != appliedMiddleware.Name {
+						return fmt.Errorf("middleware inconsistency %s != %s", (*middleware).Name(), appliedMiddleware.Name)
 					}
 				}
 			}
-			// send the plugin the mount point detach request and deal
+			// send the middleware the mount point detach request and deal
 			// with both protocol errors and detachment errors
 			request := &mountpoint.DetachRequest{container}
-			response, e := (*plugin).MountPointDetach(request)
+			response, e := (*middleware).MountPointDetach(request)
 			if e != nil {
-				errString := fmt.Sprintf("unwind detach API error for %s: \"%s\"", (*plugin).Name(), e)
+				errString := fmt.Sprintf("unwind detach API error for %s: \"%s\"", (*middleware).Name(), e)
 				return stackError(err, errString)
 			}
 			if !response.Success {
-				errString := fmt.Sprintf("unwind detach plugin %s error: \"%s\"", (*plugin).Name(), response.Err)
+				errString := fmt.Sprintf("unwind detach middleware %s error: \"%s\"", (*middleware).Name(), response.Err)
 				err = stackError(err, errString)
 				if !response.Recoverable {
 					return err
 				}
 			}
 		}
-		plugin = nil
+		middleware = nil
 	}
 	return err
 }
@@ -198,25 +203,35 @@ func max(a, b int) int {
 func (c *MountPointChain) SetPlugins(names []string) (err error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.plugins, err = mountpoint.NewPlugins(names); err != nil {
+	var plugins []mountpoint.Plugin
+	if plugins, err = mountpoint.NewPlugins(names); err != nil {
 		return err
+	}
+	c.middleware = make([]mountpoint.Middleware, len(plugins))
+	for i := range plugins {
+		c.middleware[i] = plugins[i]
 	}
 	return nil
 }
 
 // DisableMountPointPlugin removes the mount point plugin from the chain
 func (c *MountPointChain) DisableMountPointPlugin(name string) {
+	c.DisableMountPointMiddleware("plugin:" + name)
+}
+
+// DisableMountPointMiddleware removes the mount point middleware from the chain
+func (c *MountPointChain) DisableMountPointMiddleware(name string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	// There may still be mounts which are relying on it during tear
 	// down
-	var plugins []mountpoint.Plugin
-	for _, plugin := range c.plugins {
-		if plugin.Name() != name {
-			plugins = append(plugins, plugin)
+	var middleware []mountpoint.Middleware
+	for _, m := range c.middleware {
+		if m.Name() != name {
+			middleware = append(middleware, m)
 		}
 	}
-	c.plugins = plugins
+	c.middleware = middleware
 }
 
 // EnableMountPointPlugin appends a mount point plugin to the chain
@@ -227,7 +242,7 @@ func (c *MountPointChain) EnableMountPointPlugin(name string) error {
 	if err != nil {
 		return err
 	}
-	c.plugins = append(c.plugins, plugin)
+	c.middleware = append(c.middleware, plugin)
 	return nil
 }
 
@@ -244,7 +259,7 @@ func mountPointTypeOfAPIType(t mounttypes.Type) mountpoint.Type {
 	return typ
 }
 
-func pluginMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
+func middlewareMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
 	typ := mountPointTypeOfAPIType(mp.Type)
 	var labels map[string]string
 	var driverOptions map[string]string
@@ -263,33 +278,33 @@ func pluginMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
 		mode = mp.Spec.TmpfsOptions.Mode
 	}
 	return &mountpoint.MountPoint{
-		Source:          mp.Source,
-		EffectiveSource: mp.EffectiveSource(),
-		Destination:     mp.Destination,
-		ReadOnly:        !mp.RW,
-		Name:            mp.Name,
-		Driver:          mp.Driver,
-		Type:            typ,
-		Mode:            mp.Mode,
-		Propagation:     mp.Propagation,
-		ID:              mp.ID,
-		Consistency:     mp.Spec.Consistency,
-		Labels:          labels,
-		DriverOptions:   driverOptions,
-		Scope:           scope,
-		SizeBytes:       sizeBytes,
-		MountMode:       mode,
-		AppliedPlugins:  pluginAppliedPluginsOfAppliedPlugins(mp.AppliedPlugins),
+		Source:            mp.Source,
+		EffectiveSource:   mp.EffectiveSource(),
+		Destination:       mp.Destination,
+		ReadOnly:          !mp.RW,
+		Name:              mp.Name,
+		Driver:            mp.Driver,
+		Type:              typ,
+		Mode:              mp.Mode,
+		Propagation:       mp.Propagation,
+		ID:                mp.ID,
+		Consistency:       mp.Spec.Consistency,
+		Labels:            labels,
+		DriverOptions:     driverOptions,
+		Scope:             scope,
+		SizeBytes:         sizeBytes,
+		MountMode:         mode,
+		AppliedMiddleware: middlewareAppliedMiddlewareOfAppliedMiddleware(mp.AppliedMiddleware),
 	}
 }
 
-func pluginAppliedPluginsOfAppliedPlugins(plugins []AppliedMountPointPlugin) (ps []mountpoint.AppliedPlugin) {
-	for _, p := range plugins {
-		ps = append(ps, mountpoint.AppliedPlugin{
-			Name:       p.Name,
-			MountPoint: p.Attachment,
+func middlewareAppliedMiddlewareOfAppliedMiddleware(middleware []AppliedMountPointMiddleware) (ms []mountpoint.AppliedMiddleware) {
+	for _, m := range middleware {
+		ms = append(ms, mountpoint.AppliedMiddleware{
+			Name:       m.Name,
+			MountPoint: m.Attachment,
 		})
 	}
 
-	return ps
+	return ms
 }
