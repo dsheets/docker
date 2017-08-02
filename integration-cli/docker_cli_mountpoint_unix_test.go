@@ -75,14 +75,14 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 	// matches -v /host:/container
 	s.ctrl[0].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Patterns: []mountpoint.MountPointPattern{
+		Patterns: []mountpoint.Pattern{
 			{Type: &typeBind},
 		},
 	}
 	// matches -v /host:/container AND all local volume mounts
 	s.ctrl[1].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Patterns: []mountpoint.MountPointPattern{
+		Patterns: []mountpoint.Pattern{
 			{Type: &typeBind},
 			{
 				Type:   &typeVolume,
@@ -93,7 +93,7 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 	// matches local volume bind mounts (but not -v /container mounts)
 	s.ctrl[2].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Patterns: []mountpoint.MountPointPattern{
+		Patterns: []mountpoint.Pattern{
 			{
 				Type:   &typeVolume,
 				Driver: []mountpoint.StringPattern{{Exactly: "local"}},
@@ -109,7 +109,7 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 	// matches -v /container
 	s.ctrl[3].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Patterns: []mountpoint.MountPointPattern{
+		Patterns: []mountpoint.Pattern{
 			{
 				Type:   &typeVolume,
 				Driver: []mountpoint.StringPattern{{Exactly: "local"}},
@@ -127,7 +127,7 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 	// matches all bind mounts
 	s.ctrl[4].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Patterns: []mountpoint.MountPointPattern{
+		Patterns: []mountpoint.Pattern{
 			{Type: &typeBind},
 			{
 				Type:   &typeVolume,
@@ -425,7 +425,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginChangeDirectory(c *check.C) 
 		Attachments: []mountpoint.Attachment{
 			{
 				Attach: true,
-				MountPoint: mountpoint.MountPointAttachment{
+				Changes: mountpoint.Changes{
 					EffectiveSource: newdir,
 				},
 			},
@@ -544,7 +544,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginMultipleMounts(c *check.C) {
 		Attachments: []mountpoint.Attachment{
 			{
 				Attach: true,
-				MountPoint: mountpoint.MountPointAttachment{
+				Changes: mountpoint.Changes{
 					EffectiveSource: "/usr",
 				},
 			},
@@ -558,7 +558,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginMultipleMounts(c *check.C) {
 		Attachments: []mountpoint.Attachment{
 			{
 				Attach: true,
-				MountPoint: mountpoint.MountPointAttachment{
+				Changes: mountpoint.Changes{
 					EffectiveSource: "/etc",
 				},
 			},
