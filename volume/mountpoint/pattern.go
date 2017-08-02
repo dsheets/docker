@@ -87,6 +87,12 @@ func PatternMatches(pattern MountPointPattern, mount *MountPoint) bool {
 		return false
 	}
 
+	for _, pattern := range pattern.Options {
+		if !stringMapPatternMatches(pattern, mount.Options) {
+			return false
+		}
+	}
+
 	return true
 }
 

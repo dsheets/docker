@@ -126,6 +126,9 @@ type MountPoint struct {
 
 	SizeBytes int64       `json:",omitempty"`
 	MountMode os.FileMode `json:",omitempty"`
+
+	// from DetailedVolume cast
+	Options map[string]string `json:",omitempty"`
 }
 
 // Scope describes the accessibility of a volume
@@ -170,6 +173,8 @@ type MountPointPattern struct {
 
 	//SizeBytes *int64       `json:",omitempty"`
 	//MountMode *os.FileMode `json:",omitempty"`
+
+	Options []StringMapPattern `json:",omitempty"`
 }
 
 type AppliedMiddlewareStackPattern struct {

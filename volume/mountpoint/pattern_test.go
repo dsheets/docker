@@ -711,10 +711,15 @@ func TestPattern(t *testing.T) {
 		},
 
 		DriverOptions: map[string]string{
+			"dopt0": "x",
+			"dopt1": "y",
+		},
+		Scope: LocalScope,
+
+		Options: map[string]string{
 			"opt0": "x",
 			"opt1": "y",
 		},
-		Scope: LocalScope,
 	}
 
 	pattern := MountPointPattern{}
@@ -854,7 +859,7 @@ func TestPattern(t *testing.T) {
 	pattern = MountPointPattern{
 		DriverOptions: []StringMapPattern{{
 			Exists: []StringMapKeyValuePattern{
-				{Key: StringPattern{Exactly: "opt0"}},
+				{Key: StringPattern{Exactly: "dopt0"}},
 			},
 		}},
 	}
@@ -863,7 +868,7 @@ func TestPattern(t *testing.T) {
 		DriverOptions: []StringMapPattern{{
 			Not: true,
 			Exists: []StringMapKeyValuePattern{
-				{Key: StringPattern{Exactly: "opt0"}},
+				{Key: StringPattern{Exactly: "dopt0"}},
 			},
 		}},
 	}
@@ -876,6 +881,24 @@ func TestPattern(t *testing.T) {
 	globalScope := GlobalScope
 	pattern = MountPointPattern{
 		Scope: &globalScope,
+	}
+	require.Equal(t, false, PatternMatches(pattern, mountpoint))
+
+	pattern = MountPointPattern{
+		Options: []StringMapPattern{{
+			Exists: []StringMapKeyValuePattern{
+				{Key: StringPattern{Exactly: "opt0"}},
+			},
+		}},
+	}
+	require.Equal(t, true, PatternMatches(pattern, mountpoint))
+	pattern = MountPointPattern{
+		Options: []StringMapPattern{{
+			Not: true,
+			Exists: []StringMapKeyValuePattern{
+				{Key: StringPattern{Exactly: "opt0"}},
+			},
+		}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 }

@@ -268,8 +268,10 @@ func middlewareMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
 		driverOptions = mp.Spec.VolumeOptions.DriverConfig.Options
 	}
 	var scope mountpoint.Scope
+	var options map[string]string
 	if v, ok := mp.Volume.(DetailedVolume); ok {
 		scope = mountpoint.Scope(v.Scope())
+		options = v.Options()
 	}
 	var sizeBytes int64
 	var mode os.FileMode
@@ -294,6 +296,7 @@ func middlewareMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
 		Scope:             scope,
 		SizeBytes:         sizeBytes,
 		MountMode:         mode,
+		Options:           options,
 		AppliedMiddleware: middlewareAppliedMiddlewareOfAppliedMiddleware(mp.AppliedMiddleware),
 	}
 }
