@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Middleware interposes local file system mount points
+// Middleware interposes file system mount points
 type Middleware interface {
 	// Name returns the registered middleware name. Plugin names have
 	// a 'plugin:' prefix
@@ -18,7 +18,7 @@ type Middleware interface {
 	PluginName() string
 
 	// Patterns returns the mount point patterns that this plugin interposes
-	Patterns() []MountPointPattern
+	Patterns() []Pattern
 
 	// MountPointProperties returns the properties of the mount point plugin
 	MountPointProperties(*PropertiesRequest) (*PropertiesResponse, error)
@@ -30,11 +30,13 @@ type Middleware interface {
 	MountPointDetach(*DetachRequest) (*DetachResponse, error)
 }
 
+// PluginNameOfMiddlewareName returns the name of the plugin
+// implementing a particular mount point middleware name (if any)
 func PluginNameOfMiddlewareName(middlewareName string) string {
 	pluginPrefix := "plugin:"
 	if strings.HasPrefix(middlewareName, pluginPrefix) {
 		return strings.TrimPrefix(middlewareName, pluginPrefix)
-	} else {
-		return ""
 	}
+
+	return ""
 }

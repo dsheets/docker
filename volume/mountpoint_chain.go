@@ -78,7 +78,7 @@ func (c *MountPointChain) AttachMounts(id string, mounts []*MountPoint) error {
 					break
 				}
 				if attachment.Attach {
-					selectedMounts[k].PushMiddleware(middleware, attachment.MountPoint, mountPointClock)
+					selectedMounts[k].PushMiddleware(middleware, attachment.Changes, mountPointClock)
 				}
 			}
 		}
@@ -304,8 +304,8 @@ func middlewareMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
 func middlewareAppliedMiddlewareOfAppliedMiddleware(middleware []AppliedMountPointMiddleware) (ms []mountpoint.AppliedMiddleware) {
 	for _, m := range middleware {
 		ms = append(ms, mountpoint.AppliedMiddleware{
-			Name:       m.Name,
-			MountPoint: m.Attachment,
+			Name:    m.Name,
+			Changes: m.Changes,
 		})
 	}
 

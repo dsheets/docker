@@ -12,10 +12,10 @@ import (
 // serialization/deserialization), how the middleware changed the
 // mount point if any, and the order of mount point application.
 type AppliedMountPointMiddleware struct {
-	Name       string                          // Name is the name of the middleware (for later lookup)
-	middleware *mountpoint.Middleware          // middleware stores the middleware object
-	Attachment mountpoint.MountPointAttachment // Attachment contains whatever changes the middleware has made to the mount
-	Clock      int                             // Clock is a positive integer used to ensure mount detachments occur in the correct order
+	Name       string                 // Name is the name of the middleware (for later lookup)
+	middleware *mountpoint.Middleware // middleware stores the middleware object
+	Changes    mountpoint.Changes     // Changes contains whatever changes the middleware has made to the mount
+	Clock      int                    // Clock is a positive integer used to ensure mount detachments occur in the correct order
 }
 
 // Middleware will retrieve the Middleware object or create a new one if none is available
@@ -24,14 +24,14 @@ func (p AppliedMountPointMiddleware) Middleware() (*mountpoint.Middleware, error
 		pname := mountpoint.PluginNameOfMiddlewareName(p.Name)
 		if pname == "" {
 			return nil, fmt.Errorf("non-plugin middleware %s not found", p.Name)
-		} else {
-			plugin, err := mountpoint.NewMountPointPlugin(pname)
-			if err != nil {
-				return nil, err
-			}
-			middleware := mountpoint.Middleware(plugin)
-			p.middleware = &middleware
 		}
+
+		plugin, err := mountpoint.NewMountPointPlugin(pname)
+		if err != nil {
+			return nil, err
+		}
+		middleware := mountpoint.Middleware(plugin)
+		p.middleware = &middleware
 	}
 	return p.middleware, nil
 }
@@ -41,8 +41,8 @@ func (p AppliedMountPointMiddleware) Middleware() (*mountpoint.Middleware, error
 func (m *MountPoint) EffectiveSource() string {
 	for i := len(m.AppliedMiddleware) - 1; i >= 0; i-- {
 		appliedMiddleware := m.AppliedMiddleware[i]
-		if appliedMiddleware.Attachment.EffectiveSource != "" {
-			return appliedMiddleware.Attachment.EffectiveSource
+		if appliedMiddleware.Changes.EffectiveSource != "" {
+			return appliedMiddleware.Changes.EffectiveSource
 		}
 	}
 	return m.Source
@@ -50,11 +50,11 @@ func (m *MountPoint) EffectiveSource() string {
 
 // PushMiddleware pushes a new applied middleware onto the mount point's
 // middleware stack
-func (m *MountPoint) PushMiddleware(middleware mountpoint.Middleware, attachment mountpoint.MountPointAttachment, clock int) {
+func (m *MountPoint) PushMiddleware(middleware mountpoint.Middleware, changes mountpoint.Changes, clock int) {
 	appliedMiddleware := AppliedMountPointMiddleware{
 		Name:       middleware.Name(),
 		middleware: &middleware,
-		Attachment: attachment,
+		Changes:    changes,
 		Clock:      clock,
 	}
 	m.AppliedMiddleware = append(m.AppliedMiddleware, appliedMiddleware)

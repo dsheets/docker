@@ -44,7 +44,7 @@ type PropertiesResponse struct {
 
 	// Patterns is the DNF pattern set for which this middleware receives
 	// interposition requests
-	Patterns []MountPointPattern
+	Patterns []Pattern
 
 	// Err stores a message in case there's an error
 	Err string `json:",omitempty"`
@@ -70,11 +70,13 @@ type AttachResponse struct {
 
 // Attachment describes how the middleware will interact with the mount
 type Attachment struct {
-	Attach     bool
-	MountPoint MountPointAttachment `json:",omitempty"`
+	Attach  bool
+	Changes Changes `json:",omitempty"`
 }
 
-type MountPointAttachment struct {
+// Changes describes the changes middleware made to the
+// mount (if any)
+type Changes struct {
 	EffectiveSource string
 
 	// from api/types/mount
@@ -100,8 +102,8 @@ type DetachResponse struct {
 }
 
 // MountPoint is the representation of a container mount point exposed
-// to mount point middleware. MountPointPattern and MountPointAttachment
-// should be the same shape as this type.
+// to mount point middleware. Pattern and Changes should be the same
+// shape as this type.
 type MountPoint struct {
 	EffectiveSource string
 	// from volume/volume#MountPoint
@@ -145,11 +147,12 @@ const (
 // applied to a mount point as exposed to later mount point middleware in
 // the stack
 type AppliedMiddleware struct {
-	Name       string
-	MountPoint MountPointAttachment
+	Name    string
+	Changes Changes
 }
 
-type MountPointPattern struct {
+// Pattern is a description of a class of MountPoints
+type Pattern struct {
 	EffectiveSource []StringPattern `json:",omitempty"`
 	// from volume/volume#MountPoint
 	Source      []StringPattern    `json:",omitempty"`
@@ -177,6 +180,8 @@ type MountPointPattern struct {
 	Options []StringMapPattern `json:",omitempty"`
 }
 
+// AppliedMiddlewareStackPattern is a description of a class of
+// applied middleware stack
 type AppliedMiddlewareStackPattern struct {
 	Exists            []AppliedMiddlewarePattern `json:",omitempty"`
 	NotExists         []AppliedMiddlewarePattern `json:",omitempty"`
@@ -192,12 +197,14 @@ type AppliedMiddlewareStackPattern struct {
 	NotRelativeOrder  []AppliedMiddlewarePattern `json:",omitempty"`
 }
 
+// AppliedMiddlewarePattern is a description of a class of applied middleware
 type AppliedMiddlewarePattern struct {
-	Name       []StringPattern             `json:",omitempty"`
-	MountPoint MountPointAttachmentPattern `json:",omitempty"`
+	Name    []StringPattern `json:",omitempty"`
+	Changes ChangesPattern  `json:",omitempty"`
 }
 
-type MountPointAttachmentPattern struct {
+// ChangesPattern is a description of a class of mount point changes
+type ChangesPattern struct {
 	EffectiveSource []StringPattern `json:",omitempty"`
 
 	// from api/types/mount
@@ -205,6 +212,7 @@ type MountPointAttachmentPattern struct {
 	//Labels      map[string]string `json:",omitempty"`
 }
 
+// StringMapPattern is a description of a class of string -> string maps
 type StringMapPattern struct {
 	Not bool `json:",omitempty"`
 
@@ -212,11 +220,14 @@ type StringMapPattern struct {
 	All    []StringMapKeyValuePattern `json:",omitempty"`
 }
 
+// StringMapKeyValuePattern is a description of a class of string ->
+// string map key-value pairs
 type StringMapKeyValuePattern struct {
 	Key   StringPattern `json:",omitempty"`
 	Value StringPattern `json:",omitempty"`
 }
 
+// StringPattern is a description of a class of strings
 type StringPattern struct {
 	Not bool `json:",omitempty"`
 

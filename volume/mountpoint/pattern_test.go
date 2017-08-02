@@ -328,35 +328,35 @@ func TestStringMapPatternAll(t *testing.T) {
 	})
 }
 
-func TestMountPointAttachmentPattern(t *testing.T) {
-	pattern := MountPointAttachmentPattern{}
-	att := MountPointAttachment{}
-	require.Equal(t, true, mountPointAttachmentPatternMatches(pattern, att))
-	att = MountPointAttachment{EffectiveSource: "/new_dir"}
-	require.Equal(t, true, mountPointAttachmentPatternMatches(pattern, att))
-	att = MountPointAttachment{Consistency: "delegated"}
-	require.Equal(t, true, mountPointAttachmentPatternMatches(pattern, att))
+func TestChangesPattern(t *testing.T) {
+	pattern := ChangesPattern{}
+	att := Changes{}
+	require.Equal(t, true, changesPatternMatches(pattern, att))
+	att = Changes{EffectiveSource: "/new_dir"}
+	require.Equal(t, true, changesPatternMatches(pattern, att))
+	att = Changes{Consistency: "delegated"}
+	require.Equal(t, true, changesPatternMatches(pattern, att))
 
-	pattern = MountPointAttachmentPattern{
+	pattern = ChangesPattern{
 		EffectiveSource: []StringPattern{{Exactly: "/new_dir"}},
 	}
-	att = MountPointAttachment{}
-	require.Equal(t, false, mountPointAttachmentPatternMatches(pattern, att))
-	att = MountPointAttachment{EffectiveSource: "/new_dir"}
-	require.Equal(t, true, mountPointAttachmentPatternMatches(pattern, att))
-	att = MountPointAttachment{Consistency: "delegated"}
-	require.Equal(t, false, mountPointAttachmentPatternMatches(pattern, att))
+	att = Changes{}
+	require.Equal(t, false, changesPatternMatches(pattern, att))
+	att = Changes{EffectiveSource: "/new_dir"}
+	require.Equal(t, true, changesPatternMatches(pattern, att))
+	att = Changes{Consistency: "delegated"}
+	require.Equal(t, false, changesPatternMatches(pattern, att))
 
 	delegated := mount.ConsistencyDelegated
-	pattern = MountPointAttachmentPattern{
+	pattern = ChangesPattern{
 		Consistency: &delegated,
 	}
-	att = MountPointAttachment{}
-	require.Equal(t, false, mountPointAttachmentPatternMatches(pattern, att))
-	att = MountPointAttachment{EffectiveSource: "/new_dir"}
-	require.Equal(t, false, mountPointAttachmentPatternMatches(pattern, att))
-	att = MountPointAttachment{Consistency: mount.ConsistencyDelegated}
-	require.Equal(t, true, mountPointAttachmentPatternMatches(pattern, att))
+	att = Changes{}
+	require.Equal(t, false, changesPatternMatches(pattern, att))
+	att = Changes{EffectiveSource: "/new_dir"}
+	require.Equal(t, false, changesPatternMatches(pattern, att))
+	att = Changes{Consistency: mount.ConsistencyDelegated}
+	require.Equal(t, true, changesPatternMatches(pattern, att))
 }
 
 func TestAppliedMiddlewarePattern(t *testing.T) {
@@ -366,7 +366,7 @@ func TestAppliedMiddlewarePattern(t *testing.T) {
 	middleware = AppliedMiddleware{Name: "plugin:plugin"}
 	require.Equal(t, true, appliedMiddlewarePatternMatches(pattern, middleware))
 	middleware = AppliedMiddleware{
-		MountPoint: MountPointAttachment{EffectiveSource: "/new/dir"},
+		Changes: Changes{EffectiveSource: "/new/dir"},
 	}
 	require.Equal(t, true, appliedMiddlewarePatternMatches(pattern, middleware))
 
@@ -378,12 +378,12 @@ func TestAppliedMiddlewarePattern(t *testing.T) {
 	middleware = AppliedMiddleware{Name: "plugin:plugin"}
 	require.Equal(t, true, appliedMiddlewarePatternMatches(pattern, middleware))
 	middleware = AppliedMiddleware{
-		MountPoint: MountPointAttachment{EffectiveSource: "/new/dir"},
+		Changes: Changes{EffectiveSource: "/new/dir"},
 	}
 	require.Equal(t, false, appliedMiddlewarePatternMatches(pattern, middleware))
 
 	pattern = AppliedMiddlewarePattern{
-		MountPoint: MountPointAttachmentPattern{
+		Changes: ChangesPattern{
 			EffectiveSource: []StringPattern{{PathPrefix: "/new"}},
 		},
 	}
@@ -392,7 +392,7 @@ func TestAppliedMiddlewarePattern(t *testing.T) {
 	middleware = AppliedMiddleware{Name: "plugin:plugin"}
 	require.Equal(t, false, appliedMiddlewarePatternMatches(pattern, middleware))
 	middleware = AppliedMiddleware{
-		MountPoint: MountPointAttachment{EffectiveSource: "/new/dir"},
+		Changes: Changes{EffectiveSource: "/new/dir"},
 	}
 	require.Equal(t, true, appliedMiddlewarePatternMatches(pattern, middleware))
 }
@@ -722,96 +722,96 @@ func TestPattern(t *testing.T) {
 		},
 	}
 
-	pattern := MountPointPattern{}
+	pattern := Pattern{}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		EffectiveSource: []StringPattern{{Exactly: "/src"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		EffectiveSource: []StringPattern{{Not: true, Exactly: "/src"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Source: []StringPattern{{Exactly: "/src"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Source: []StringPattern{{Not: true, Exactly: "/src"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Destination: []StringPattern{{PathPrefix: "/mnt"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Destination: []StringPattern{{Not: true, PathPrefix: "/mnt"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	tru := true
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		ReadOnly: &tru,
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	fals := false
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		ReadOnly: &fals,
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Name: []StringPattern{{Exactly: "MyVolume"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Name: []StringPattern{{Not: true, Exactly: "MyVolume"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Driver: []StringPattern{{Exactly: "local"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Driver: []StringPattern{{Not: true, Exactly: "local"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	volume := TypeVolume
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Type: &volume,
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	bind := TypeBind
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Type: &bind,
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Mode: []StringPattern{{Contains: "o=bind"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Mode: []StringPattern{{Not: true, Contains: "o=bind"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	propagationShared := mount.PropagationShared
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Propagation: &propagationShared,
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	propagationSlave := mount.PropagationSlave
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Propagation: &propagationSlave,
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		ID: []StringPattern{{Exactly: "0123456789abcdef"}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		ID: []StringPattern{{Not: true, Exactly: "0123456789abcdef"}},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		AppliedMiddleware: AppliedMiddlewareStackPattern{
 			Exists: []AppliedMiddlewarePattern{
 				{Name: []StringPattern{{Exactly: "plugin:mountPointPlugin0"}}},
@@ -819,7 +819,7 @@ func TestPattern(t *testing.T) {
 		},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		AppliedMiddleware: AppliedMiddlewareStackPattern{
 			NotExists: []AppliedMiddlewarePattern{{
 				Name: []StringPattern{{Exactly: "plugin:mountPointPlugin0"}},
@@ -829,16 +829,16 @@ func TestPattern(t *testing.T) {
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
 	cached := mount.ConsistencyCached
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Consistency: &cached,
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	delegated := mount.ConsistencyDelegated
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Consistency: &delegated,
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Labels: []StringMapPattern{{
 			Exists: []StringMapKeyValuePattern{
 				{Key: StringPattern{Exactly: "label0"}},
@@ -846,7 +846,7 @@ func TestPattern(t *testing.T) {
 		}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Labels: []StringMapPattern{{
 			Not: true,
 			Exists: []StringMapKeyValuePattern{
@@ -856,7 +856,7 @@ func TestPattern(t *testing.T) {
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		DriverOptions: []StringMapPattern{{
 			Exists: []StringMapKeyValuePattern{
 				{Key: StringPattern{Exactly: "dopt0"}},
@@ -864,7 +864,7 @@ func TestPattern(t *testing.T) {
 		}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		DriverOptions: []StringMapPattern{{
 			Not: true,
 			Exists: []StringMapKeyValuePattern{
@@ -874,17 +874,17 @@ func TestPattern(t *testing.T) {
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	localScope := LocalScope
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Scope: &localScope,
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	globalScope := GlobalScope
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Scope: &globalScope,
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Options: []StringMapPattern{{
 			Exists: []StringMapKeyValuePattern{
 				{Key: StringPattern{Exactly: "opt0"}},
@@ -892,7 +892,7 @@ func TestPattern(t *testing.T) {
 		}},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
-	pattern = MountPointPattern{
+	pattern = Pattern{
 		Options: []StringMapPattern{{
 			Not: true,
 			Exists: []StringMapKeyValuePattern{

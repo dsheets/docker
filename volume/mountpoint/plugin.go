@@ -7,6 +7,8 @@ import (
 	"github.com/docker/docker/pkg/plugins"
 )
 
+// Plugin is a type of Middleware that interposes file system mount
+// points with operation occurring out of process
 type Plugin interface {
 	Middleware
 }
@@ -49,7 +51,7 @@ func GetPluginGetter() plugingetter.PluginGetter {
 type mountPointPlugin struct {
 	plugin   *plugins.Client
 	name     string
-	patterns []MountPointPattern
+	patterns []Pattern
 }
 
 // NewMountPointPlugin of a name will return a plugin object or an
@@ -100,7 +102,7 @@ func (b *mountPointPlugin) PluginName() string {
 	return b.name
 }
 
-func (b *mountPointPlugin) Patterns() []MountPointPattern {
+func (b *mountPointPlugin) Patterns() []Pattern {
 	return b.patterns
 }
 

@@ -8,7 +8,7 @@ import (
 // PatternMatches determines if a pattern matches a mount point
 // description. Patterns are conjunctions and a higher-level routine
 // must implement disjunction.
-func PatternMatches(pattern MountPointPattern, mount *MountPoint) bool {
+func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 	for _, pattern := range pattern.EffectiveSource {
 		if !stringPatternMatches(pattern, mount.EffectiveSource) {
 			return false
@@ -289,22 +289,22 @@ func appliedMiddlewarePatternMatches(pattern AppliedMiddlewarePattern, appliedMi
 		}
 	}
 
-	if !mountPointAttachmentPatternMatches(pattern.MountPoint, appliedMiddleware.MountPoint) {
+	if !changesPatternMatches(pattern.Changes, appliedMiddleware.Changes) {
 		return false
 	}
 
 	return true
 }
 
-func mountPointAttachmentPatternMatches(pattern MountPointAttachmentPattern, attachment MountPointAttachment) bool {
+func changesPatternMatches(pattern ChangesPattern, changes Changes) bool {
 
 	for _, pattern := range pattern.EffectiveSource {
-		if !stringPatternMatches(pattern, attachment.EffectiveSource) {
+		if !stringPatternMatches(pattern, changes.EffectiveSource) {
 			return false
 		}
 	}
 
-	if pattern.Consistency != nil && *pattern.Consistency != attachment.Consistency {
+	if pattern.Consistency != nil && *pattern.Consistency != changes.Consistency {
 		return false
 	}
 
