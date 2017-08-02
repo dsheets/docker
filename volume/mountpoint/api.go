@@ -159,7 +159,7 @@ type MountPointPattern struct {
 	Propagation *mount.Propagation `json:",omitempty"`
 	ID          []StringPattern    `json:",omitempty"`
 
-	AppliedMiddleware *AppliedMiddlewareStackPattern
+	AppliedMiddleware AppliedMiddlewareStackPattern
 
 	// from api/types/mount
 	Consistency *mount.Consistency `json:",omitempty"`
@@ -203,8 +203,13 @@ type MountPointAttachmentPattern struct {
 type StringMapPattern struct {
 	Not bool `json:",omitempty"`
 
-	Exists map[StringPattern]*StringPattern `json:",omitempty"`
-	All    map[StringPattern]*StringPattern `json:",omitempty"`
+	Exists []StringMapKeyValuePattern `json:",omitempty"`
+	All    []StringMapKeyValuePattern `json:",omitempty"`
+}
+
+type StringMapKeyValuePattern struct {
+	Key   StringPattern `json:",omitempty"`
+	Value StringPattern `json:",omitempty"`
 }
 
 type StringPattern struct {

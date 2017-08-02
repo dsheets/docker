@@ -63,7 +63,7 @@ func PatternMatches(pattern MountPointPattern, mount *MountPoint) bool {
 		}
 	}
 
-	if pattern.AppliedMiddleware != nil && !appliedMiddlewareStackPatternMatches(*pattern.AppliedMiddleware, mount.AppliedMiddleware) {
+	if !appliedMiddlewareStackPatternMatches(pattern.AppliedMiddleware, mount.AppliedMiddleware) {
 		return false
 	}
 
@@ -312,11 +312,11 @@ func stringMapPatternMatches(pattern StringMapPattern, stringMap map[string]stri
 	// patterns or maps will typically be big enough for the potential
 	// constant (3x?) performance improvement to matter.
 
-	for keyPattern, valuePatternOpt := range pattern.Exists {
+	for _, keyValuePattern := range pattern.Exists {
 		matched := false
 		for key, value := range stringMap {
-			if stringPatternMatches(keyPattern, key) {
-				if valuePatternOpt == nil || stringPatternMatches(*valuePatternOpt, value) {
+			if stringPatternMatches(keyValuePattern.Key, key) {
+				if stringPatternMatches(keyValuePattern.Value, value) {
 					matched = true
 					break
 				}
@@ -328,15 +328,15 @@ func stringMapPatternMatches(pattern StringMapPattern, stringMap map[string]stri
 		}
 	}
 
-	for keyPattern, valuePatternOpt := range pattern.All {
+	for _, keyValuePattern := range pattern.All {
 		matched := true
 		for key, value := range stringMap {
-			if stringPatternMatches(keyPattern, key) {
-				if valuePatternOpt != nil && !stringPatternMatches(*valuePatternOpt, value) {
+			if stringPatternMatches(keyValuePattern.Key, key) {
+				if !stringPatternMatches(keyValuePattern.Value, value) {
 					matched = false
 					break
 				}
-			} else if valuePatternOpt == nil {
+			} else if stringPatternIsEmpty(keyValuePattern.Value) {
 				matched = false
 				break
 			}
@@ -389,4 +389,8 @@ func stringPatternMatches(pattern StringPattern, string string) bool {
 	}
 
 	return true
+}
+
+func stringPatternIsEmpty(p StringPattern) bool {
+	return !p.Empty && p.Prefix == "" && p.PathPrefix == "" && p.Suffix == "" && p.Exactly == "" && p.Contains == ""
 }

@@ -94,8 +94,8 @@ func testStringMapPatternInverse(pattern StringMapPattern, f func(pattern String
 
 func TestStringMapPatternExists(t *testing.T) {
 	testStringMapPatternInverse(StringMapPattern{
-		Exists: map[StringPattern]*StringPattern{
-			{Exactly: "key"}: nil,
+		Exists: []StringMapKeyValuePattern{
+			{Key: StringPattern{Exactly: "key"}},
 		},
 	}, func(pattern StringMapPattern, tru, fals bool) {
 		stringMap := map[string]string{}
@@ -115,9 +115,10 @@ func TestStringMapPatternExists(t *testing.T) {
 	})
 
 	testStringMapPatternInverse(StringMapPattern{
-		Exists: map[StringPattern]*StringPattern{
-			{Exactly: "key"}: {Exactly: "value"},
-		},
+		Exists: []StringMapKeyValuePattern{{
+			Key:   StringPattern{Exactly: "key"},
+			Value: StringPattern{Exactly: "value"},
+		}},
 	}, func(pattern StringMapPattern, tru, fals bool) {
 		stringMap := map[string]string{
 			"foo": "",
@@ -132,9 +133,9 @@ func TestStringMapPatternExists(t *testing.T) {
 	})
 
 	testStringMapPatternInverse(StringMapPattern{
-		Exists: map[StringPattern]*StringPattern{
-			{Exactly: "key"}: nil,
-			{Exactly: "k2"}:  nil,
+		Exists: []StringMapKeyValuePattern{
+			{Key: StringPattern{Exactly: "key"}},
+			{Key: StringPattern{Exactly: "k2"}},
 		},
 	}, func(pattern StringMapPattern, tru, fals bool) {
 		stringMap := map[string]string{}
@@ -161,9 +162,15 @@ func TestStringMapPatternExists(t *testing.T) {
 	})
 
 	testStringMapPatternInverse(StringMapPattern{
-		Exists: map[StringPattern]*StringPattern{
-			{}:               {Prefix: "abc"},
-			{Exactly: "key"}: {Suffix: "bcd"},
+		Exists: []StringMapKeyValuePattern{
+			{
+				Key:   StringPattern{},
+				Value: StringPattern{Prefix: "abc"},
+			},
+			{
+				Key:   StringPattern{Exactly: "key"},
+				Value: StringPattern{Suffix: "bcd"},
+			},
 		},
 	}, func(pattern StringMapPattern, tru, fals bool) {
 		stringMap := map[string]string{}
@@ -190,8 +197,8 @@ func TestStringMapPatternExists(t *testing.T) {
 
 func TestStringMapPatternAll(t *testing.T) {
 	testStringMapPatternInverse(StringMapPattern{
-		All: map[StringPattern]*StringPattern{
-			{Prefix: "pre"}: nil,
+		All: []StringMapKeyValuePattern{
+			{Key: StringPattern{Prefix: "pre"}},
 		},
 	}, func(pattern StringMapPattern, tru, fals bool) {
 		stringMap := map[string]string{}
@@ -217,9 +224,9 @@ func TestStringMapPatternAll(t *testing.T) {
 	})
 
 	testStringMapPatternInverse(StringMapPattern{
-		All: map[StringPattern]*StringPattern{
-			{Prefix: "pre"}: nil,
-			{Suffix: "x"}:   nil,
+		All: []StringMapKeyValuePattern{
+			{Key: StringPattern{Prefix: "pre"}},
+			{Key: StringPattern{Suffix: "x"}},
 		},
 	}, func(pattern StringMapPattern, tru, fals bool) {
 		stringMap := map[string]string{}
@@ -245,8 +252,11 @@ func TestStringMapPatternAll(t *testing.T) {
 	})
 
 	testStringMapPatternInverse(StringMapPattern{
-		All: map[StringPattern]*StringPattern{
-			{Prefix: "key"}: {Exactly: "value"},
+		All: []StringMapKeyValuePattern{
+			{
+				Key:   StringPattern{Prefix: "key"},
+				Value: StringPattern{Exactly: "value"},
+			},
 		},
 	}, func(pattern StringMapPattern, tru, fals bool) {
 		stringMap := map[string]string{}
@@ -278,9 +288,15 @@ func TestStringMapPatternAll(t *testing.T) {
 	})
 
 	testStringMapPatternInverse(StringMapPattern{
-		All: map[StringPattern]*StringPattern{
-			{Prefix: "key"}: {Prefix: "v"},
-			{Suffix: "_"}:   {Suffix: "e"},
+		All: []StringMapKeyValuePattern{
+			{
+				Key:   StringPattern{Prefix: "key"},
+				Value: StringPattern{Prefix: "v"},
+			},
+			{
+				Key:   StringPattern{Suffix: "_"},
+				Value: StringPattern{Suffix: "e"},
+			},
 		},
 	}, func(pattern StringMapPattern, tru, fals bool) {
 		stringMap := map[string]string{}
@@ -791,7 +807,7 @@ func TestPattern(t *testing.T) {
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
 	pattern = MountPointPattern{
-		AppliedMiddleware: &AppliedMiddlewareStackPattern{
+		AppliedMiddleware: AppliedMiddlewareStackPattern{
 			Exists: []AppliedMiddlewarePattern{
 				{Name: []StringPattern{{Exactly: "plugin:mountPointPlugin0"}}},
 			},
@@ -799,7 +815,7 @@ func TestPattern(t *testing.T) {
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
-		AppliedMiddleware: &AppliedMiddlewareStackPattern{
+		AppliedMiddleware: AppliedMiddlewareStackPattern{
 			NotExists: []AppliedMiddlewarePattern{{
 				Name: []StringPattern{{Exactly: "plugin:mountPointPlugin0"}},
 			}},
@@ -819,8 +835,8 @@ func TestPattern(t *testing.T) {
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = MountPointPattern{
 		Labels: []StringMapPattern{{
-			Exists: map[StringPattern]*StringPattern{
-				{Exactly: "label0"}: nil,
+			Exists: []StringMapKeyValuePattern{
+				{Key: StringPattern{Exactly: "label0"}},
 			},
 		}},
 	}
@@ -828,8 +844,8 @@ func TestPattern(t *testing.T) {
 	pattern = MountPointPattern{
 		Labels: []StringMapPattern{{
 			Not: true,
-			Exists: map[StringPattern]*StringPattern{
-				{Exactly: "label0"}: nil,
+			Exists: []StringMapKeyValuePattern{
+				{Key: StringPattern{Exactly: "label0"}},
 			},
 		}},
 	}
@@ -837,8 +853,8 @@ func TestPattern(t *testing.T) {
 
 	pattern = MountPointPattern{
 		DriverOptions: []StringMapPattern{{
-			Exists: map[StringPattern]*StringPattern{
-				{Exactly: "opt0"}: nil,
+			Exists: []StringMapKeyValuePattern{
+				{Key: StringPattern{Exactly: "opt0"}},
 			},
 		}},
 	}
@@ -846,8 +862,8 @@ func TestPattern(t *testing.T) {
 	pattern = MountPointPattern{
 		DriverOptions: []StringMapPattern{{
 			Not: true,
-			Exists: map[StringPattern]*StringPattern{
-				{Exactly: "opt0"}: nil,
+			Exists: []StringMapKeyValuePattern{
+				{Key: StringPattern{Exactly: "opt0"}},
 			},
 		}},
 	}
