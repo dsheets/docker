@@ -69,71 +69,75 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 	s.ctrl[4] = &mountPointController{}
 	*s.ctrl[4] = *s.ctrl[0]
 
+	typeBind := mountpoint.TypeBind
+	typeVolume := mountpoint.TypeVolume
+
 	// matches -v /host:/container
 	s.ctrl[0].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Types: map[mountpoint.Type]bool{
-			mountpoint.TypeBind: true,
+		Patterns: []mountpoint.MountPointPattern{
+			{Type: &typeBind},
 		},
 	}
 	// matches -v /host:/container AND all local volume mounts
 	s.ctrl[1].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Types: map[mountpoint.Type]bool{
-			mountpoint.TypeBind:   true,
-			mountpoint.TypeVolume: true,
-		},
-		VolumePatterns: []mountpoint.VolumePattern{
+		Patterns: []mountpoint.MountPointPattern{
+			{Type: &typeBind},
 			{
-				VolumePlugin: "local",
+				Type:   &typeVolume,
+				Driver: []mountpoint.StringPattern{{Exactly: "local"}},
 			},
 		},
 	}
 	// matches local volume bind mounts (but not -v /container mounts)
 	s.ctrl[2].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Types: map[mountpoint.Type]bool{
-			mountpoint.TypeVolume: true,
-		},
-		VolumePatterns: []mountpoint.VolumePattern{
+		Patterns: []mountpoint.MountPointPattern{
 			{
-				VolumePlugin: "local",
-				OptionPattern: map[string][]string{
-					"o": {"bind"},
-				},
+				Type:   &typeVolume,
+				Driver: []mountpoint.StringPattern{{Exactly: "local"}},
+				Options: []mountpoint.StringMapPattern{{
+					Exists: []mountpoint.StringMapKeyValuePattern{{
+						Key:   mountpoint.StringPattern{Exactly: "o"},
+						Value: mountpoint.StringPattern{Contains: "bind"},
+					}},
+				}},
 			},
 		},
 	}
 	// matches -v /container
 	s.ctrl[3].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Types: map[mountpoint.Type]bool{
-			mountpoint.TypeVolume: true,
-		},
-		VolumePatterns: []mountpoint.VolumePattern{
+		Patterns: []mountpoint.MountPointPattern{
 			{
-				VolumePlugin: "local",
-				OptionPattern: map[string][]string{
-					"!type":   {},
-					"!device": {},
-					"!o":      {},
-				},
+				Type:   &typeVolume,
+				Driver: []mountpoint.StringPattern{{Exactly: "local"}},
+				Options: []mountpoint.StringMapPattern{{
+					Not: true,
+					Exists: []mountpoint.StringMapKeyValuePattern{
+						{Key: mountpoint.StringPattern{Exactly: "o"}},
+						{Key: mountpoint.StringPattern{Exactly: "device"}},
+						{Key: mountpoint.StringPattern{Exactly: "type"}},
+					},
+				}},
 			},
 		},
 	}
 	// matches all bind mounts
 	s.ctrl[4].propertiesRes = mountpoint.PropertiesResponse{
 		Success: true,
-		Types: map[mountpoint.Type]bool{
-			mountpoint.TypeBind:   true,
-			mountpoint.TypeVolume: true,
-		},
-		VolumePatterns: []mountpoint.VolumePattern{
+		Patterns: []mountpoint.MountPointPattern{
+			{Type: &typeBind},
 			{
-				VolumePlugin: "local",
-				OptionPattern: map[string][]string{
-					"o": {"bind"},
-				},
+				Type:   &typeVolume,
+				Driver: []mountpoint.StringPattern{{Exactly: "local"}},
+				Options: []mountpoint.StringMapPattern{{
+					Exists: []mountpoint.StringMapKeyValuePattern{{
+						Key:   mountpoint.StringPattern{Exactly: "o"},
+						Value: mountpoint.StringPattern{Contains: "bind"},
+					}},
+				}},
 			},
 		},
 	}
@@ -283,7 +287,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginError(c *check.C) {
 	res, err := s.d.Cmd("run", "-d", "-v", "/secret:/host", "busybox", "top")
 	c.Assert(err, check.NotNil, check.Commentf(res))
 
-	c.Assert(res, checker.HasSuffix, fmt.Sprintf("Error response from daemon: plugin %s0 failed with error: %s: %s.\n", testMountPointPlugin, mountpoint.MountPointAPIAttach, mountFailMessage))
+	c.Assert(res, checker.HasSuffix, fmt.Sprintf("Error response from daemon: middleware plugin:%s0 failed with error: %s: %s.\n", testMountPointPlugin, mountpoint.MountPointAPIAttach, mountFailMessage))
 	c.Assert(s.ctrl[0].attachCnt, check.Equals, 1)
 }
 
@@ -420,8 +424,10 @@ func (s *DockerMountPointSuite) TestMountPointPluginChangeDirectory(c *check.C) 
 		Success: true,
 		Attachments: []mountpoint.Attachment{
 			{
-				Attach:        true,
-				NewMountPoint: newdir,
+				Attach: true,
+				MountPoint: mountpoint.MountPointAttachment{
+					EffectiveSource: newdir,
+				},
 			},
 		},
 	}
@@ -478,7 +484,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginFailureUnwind(c *check.C) {
 	out, err = s.d.Cmd("run", "-d", "-v", volID+":/tmpfs", "busybox", "top")
 	c.Assert(err, check.NotNil, check.Commentf(out))
 
-	c.Assert(out, checker.HasSuffix, fmt.Sprintf("Error response from daemon: plugin %s4 failed with error: %s: %s.\n", testMountPointPlugin, mountpoint.MountPointAPIAttach, mountFailMessage))
+	c.Assert(out, checker.HasSuffix, fmt.Sprintf("Error response from daemon: middleware plugin:%s4 failed with error: %s: %s.\n", testMountPointPlugin, mountpoint.MountPointAPIAttach, mountFailMessage))
 
 	c.Assert(s.events, checker.DeepEquals, []string{"1:properties", "2:properties", "4:properties", "1:attach", "2:attach", "4:attach", "2:detach", "1:detach"})
 
@@ -488,7 +494,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginFailureUnwind(c *check.C) {
 	out, err = s.d.Cmd("run", "-d", "-v", volID+":/tmpfs", "busybox", "top")
 	c.Assert(err, check.NotNil, check.Commentf(out))
 
-	c.Assert(out, checker.HasSuffix, fmt.Sprintf("Error response from daemon: plugin %s4 failed with error: %s: %s.\n", testMountPointPlugin, mountpoint.MountPointAPIAttach, mountFailMessage))
+	c.Assert(out, checker.HasSuffix, fmt.Sprintf("Error response from daemon: middleware plugin:%s4 failed with error: %s: %s.\n", testMountPointPlugin, mountpoint.MountPointAPIAttach, mountFailMessage))
 
 	c.Assert(s.events, checker.DeepEquals, []string{"1:attach", "2:attach", "4:attach", "1:detach"})
 }
@@ -537,8 +543,10 @@ func (s *DockerMountPointSuite) TestMountPointPluginMultipleMounts(c *check.C) {
 		Success: true,
 		Attachments: []mountpoint.Attachment{
 			{
-				Attach:        true,
-				NewMountPoint: "/usr",
+				Attach: true,
+				MountPoint: mountpoint.MountPointAttachment{
+					EffectiveSource: "/usr",
+				},
 			},
 			{ // tests overlong attach lists
 				Attach: true,
@@ -549,8 +557,10 @@ func (s *DockerMountPointSuite) TestMountPointPluginMultipleMounts(c *check.C) {
 		Success: true,
 		Attachments: []mountpoint.Attachment{
 			{
-				Attach:        true,
-				NewMountPoint: "/etc",
+				Attach: true,
+				MountPoint: mountpoint.MountPointAttachment{
+					EffectiveSource: "/etc",
+				},
 			},
 			{
 				Attach: true,
