@@ -41,6 +41,7 @@ import (
 	"github.com/docker/docker/pkg/jsonlog"
 	"github.com/docker/docker/pkg/pidfile"
 	"github.com/docker/docker/pkg/plugingetter"
+	"github.com/docker/docker/pkg/plugins"
 	"github.com/docker/docker/pkg/signal"
 	"github.com/docker/docker/pkg/system"
 	"github.com/docker/docker/plugin"
@@ -577,6 +578,13 @@ func (cli *DaemonCli) initMiddlewares(s *apiserver.Server, cfg *apiserver.Config
 	cli.authzMiddleware = authorization.NewMiddleware(cli.Config.AuthorizationPlugins, pluginStore)
 	cli.Config.AuthzMiddleware = cli.authzMiddleware
 	s.UseMiddleware(cli.authzMiddleware)
+
+	pluginStore.HandleV2("mountpoint", func(name string, client *plugins.Client) {
+		err := cli.Config.MountPointChain.AppendPluginIfMissing(name)
+		if err != nil {
+			logrus.Errorf("unable to load mount point plugin %s: %s", name, err)
+		}
+	})
 
 	return nil
 }

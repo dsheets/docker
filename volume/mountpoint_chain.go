@@ -214,6 +214,26 @@ func (c *MountPointChain) SetPlugins(names []string) (err error) {
 	return nil
 }
 
+// AppendPluginIfMissing appends the mount point plugin named to the
+// end of the chain if it isn't already in the chain
+func (c *MountPointChain) AppendPluginIfMissing(name string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for _, p := range c.middleware {
+		if p.PluginName() == name {
+			return nil
+		}
+	}
+
+	plugin, err := mountpoint.NewMountPointPlugin(name)
+	if err != nil {
+		return err
+	}
+	c.middleware = append(c.middleware, plugin)
+	return nil
+}
+
 // DisableMountPointPlugin removes the mount point plugin from the chain
 func (c *MountPointChain) DisableMountPointPlugin(name string) {
 	c.DisableMountPointMiddleware("plugin:" + name)
