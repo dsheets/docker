@@ -323,7 +323,8 @@ func middlewareMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
 	}
 }
 
-func middlewareAppliedMiddlewareOfAppliedMiddleware(middleware []AppliedMountPointMiddleware) (ms []mountpoint.AppliedMiddleware) {
+func middlewareAppliedMiddlewareOfAppliedMiddleware(middleware []AppliedMountPointMiddleware) []mountpoint.AppliedMiddleware {
+	ms := []mountpoint.AppliedMiddleware{}
 	for _, m := range middleware {
 		ms = append(ms, mountpoint.AppliedMiddleware{
 			Name:    m.Name,

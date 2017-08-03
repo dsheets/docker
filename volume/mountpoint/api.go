@@ -109,9 +109,9 @@ type MountPoint struct {
 	// from volume/volume#MountPoint
 	Source      string
 	Destination string
-	ReadOnly    bool
-	Name        string
-	Driver      string
+	ReadOnly    bool              `json:",omitempty"`
+	Name        string            `json:",omitempty"`
+	Driver      string            `json:",omitempty"`
 	Type        Type              `json:",omitempty"`
 	Mode        string            `json:",omitempty"`
 	Propagation mount.Propagation `json:",omitempty"`
