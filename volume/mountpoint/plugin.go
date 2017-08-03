@@ -106,6 +106,10 @@ func (b *mountPointPlugin) Patterns() []Pattern {
 	return b.patterns
 }
 
+func (b *mountPointPlugin) Destroy() {
+	delete(pluginCache, b.name)
+}
+
 func (b *mountPointPlugin) MountPointAttach(req *AttachRequest) (*AttachResponse, error) {
 	res := &AttachResponse{}
 	if err := b.plugin.Call(MountPointAPIAttach, req, res); err != nil {

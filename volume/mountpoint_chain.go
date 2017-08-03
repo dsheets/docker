@@ -247,7 +247,9 @@ func (c *MountPointChain) DisableMountPointMiddleware(name string) {
 	// down
 	var middleware []mountpoint.Middleware
 	for _, m := range c.middleware {
-		if m.Name() != name {
+		if m.Name() == name {
+			m.Destroy()
+		} else {
 			middleware = append(middleware, m)
 		}
 	}

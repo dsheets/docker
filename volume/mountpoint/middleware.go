@@ -20,6 +20,9 @@ type Middleware interface {
 	// Patterns returns the mount point patterns that this plugin interposes
 	Patterns() []Pattern
 
+	// Destroy cleans up any resources the middleware may be using
+	Destroy()
+
 	// MountPointProperties returns the properties of the mount point plugin
 	MountPointProperties(*PropertiesRequest) (*PropertiesResponse, error)
 
