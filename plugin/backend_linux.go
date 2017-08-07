@@ -77,7 +77,7 @@ func (pm *Manager) Disable(refOrID string, config *types.PluginDisableConfig) er
 }
 
 // Enable activates a plugin, which implies that they are ready to be used by containers.
-func (pm *Manager) Enable(refOrID string, config *types.PluginEnableConfig) (err error) {
+func (pm *Manager) Enable(refOrID string, config *types.PluginEnableConfig) error {
 	p, err := pm.config.Store.GetV2Plugin(refOrID)
 	if err != nil {
 		return err
@@ -87,26 +87,7 @@ func (pm *Manager) Enable(refOrID string, config *types.PluginEnableConfig) (err
 	if err := pm.enable(p, c, false); err != nil {
 		return err
 	}
-
-	defer func() {
-		if err != nil {
-			if err2 := pm.disable(p, c); err2 != nil {
-				err = errors.Wrapf(err, "failed to disable plugin after failed enable: [%s]", err2)
-			}
-		}
-	}()
-
-	for _, typ := range p.GetTypes() {
-		if typ.Capability == mountpoint.MountPointAPIImplements {
-			err = pm.config.MountPointChain.EnableMountPointPlugin(p.Name())
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	pm.publisher.Publish(EventEnable{Plugin: p.PluginObj})
-
 	pm.config.LogPluginEvent(p.GetID(), refOrID, "enable")
 	return nil
 }
