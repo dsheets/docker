@@ -23,6 +23,10 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 		if err := daemon.lazyInitializeVolume(c.ID, mount); err != nil {
 			return nil, err
 		}
+		err := mount.Realize()
+		if err != nil {
+			return nil, err
+		}
 		err := mount.Setup(c.MountLabel, idtools.IDPair{0, 0}, nil)
 		if err != nil {
 			return nil, err

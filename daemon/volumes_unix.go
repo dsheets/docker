@@ -30,6 +30,7 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 	// TODO: tmpfs mounts should be part of Mountpoints
 	tmpfsMounts := make(map[string]bool)
 	tmpfsMountInfo, err := c.TmpfsMounts()
+	rootIDs := daemon.idMappings.RootPair()
 	if err != nil {
 		return nil, err
 	}
@@ -43,18 +44,8 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 		if err := daemon.lazyInitializeVolume(c.ID, m); err != nil {
 			return nil, err
 		}
-		// If the daemon is being shutdown, we should not let a container start if it is trying to
-		// mount the socket the daemon is listening on. During daemon shutdown, the socket
-		// (/var/run/docker.sock by default) doesn't exist anymore causing the call to m.Setup to
-		// create at directory instead. This in turn will prevent the daemon to restart.
-		checkfunc := func(m *volume.MountPoint) error {
-			if _, exist := daemon.hosts[m.Source]; exist && daemon.IsShuttingDown() {
-				return fmt.Errorf("Could not mount %q to container while the daemon is shutting down", m.Source)
-			}
-			return nil
-		}
 
-		err := m.Setup(c.MountLabel, daemon.idMappings.RootPair(), checkfunc)
+		err := m.Realize()
 		if err != nil {
 			return nil, err
 		}
@@ -70,6 +61,11 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 				daemon.LogVolumeEvent(m.Volume.Name(), "mount", attributes)
 			}
 			mountPoints = append(mountPoints, m)
+		} else {
+			err := m.Setup(c.MountLabel, rootIDs, daemon.dontBindDockerSockDuringShutdown)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -78,12 +74,18 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 		return nil, err
 	}
 
+	for _, m := range mountPoints {
+		err := m.Setup(c.MountLabel, rootIDs, daemon.dontBindDockerSockDuringShutdown)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	mounts = container.SortMounts(mounts)
 	netMounts := c.NetworkMounts()
 	// if we are going to mount any of the network files from container
 	// metadata, the ownership must be set properly for potential container
 	// remapped root (user namespaces)
-	rootIDs := daemon.idMappings.RootPair()
 	for _, mount := range netMounts {
 		if err := os.Chown(mount.Source, rootIDs.UID, rootIDs.GID); err != nil {
 			return nil, err
@@ -238,5 +240,18 @@ func (daemon *Daemon) mountVolumes(container *container.Container) error {
 		}
 	}
 
+	return nil
+}
+
+func (daemon *Daemon) dontBindDockerSockDuringShutdown(m *volume.MountPoint) error {
+	// If the daemon is being shutdown, we should not let a container
+	// start if it is trying to mount the socket the daemon is
+	// listening on. During daemon shutdown, the socket
+	// (/var/run/docker.sock by default) doesn't exist anymore causing
+	// the call to m.Setup to create at directory instead. This in
+	// turn will prevent the daemon to restart.
+	if _, exist := daemon.hosts[m.Source]; exist && daemon.IsShuttingDown() {
+		return fmt.Errorf("Could not mount %q to container while the daemon is shutting down", m.Source)
+	}
 	return nil
 }
