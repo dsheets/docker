@@ -3,6 +3,8 @@ package volume
 import (
 	"fmt"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/volume/mountpoint"
 )
 
@@ -12,10 +14,10 @@ import (
 // serialization/deserialization), how the middleware changed the
 // mount point if any, and the order of mount point application.
 type AppliedMountPointMiddleware struct {
-	Name       string                 // Name is the name of the middleware (for later lookup)
-	middleware *mountpoint.Middleware // middleware stores the middleware object
-	Changes    mountpoint.Changes     // Changes contains whatever changes the middleware has made to the mount
-	Clock      int                    // Clock is a positive integer used to ensure mount detachments occur in the correct order
+	Name       string                  // Name is the name of the middleware (for later lookup)
+	middleware *mountpoint.Middleware  // middleware stores the middleware object
+	Changes    types.MountPointChanges // Changes contains whatever changes the middleware has made to the mount
+	Clock      int                     // Clock is a positive integer used to ensure mount detachments occur in the correct order
 }
 
 // Middleware will retrieve the Middleware object or create a new one if none is available
@@ -48,9 +50,22 @@ func (m *MountPoint) EffectiveSource() string {
 	return m.Source
 }
 
+// EffectiveConsistency is the consistency actually applied (rather
+// than simply requested) to a mount point as middleware may have
+// changed the consistency due to user annotation.
+func (m *MountPoint) EffectiveConsistency() mount.Consistency {
+	for i := len(m.AppliedMiddleware) - 1; i >= 0; i-- {
+		appliedMiddleware := m.AppliedMiddleware[i]
+		if appliedMiddleware.Changes.EffectiveConsistency != "" {
+			return appliedMiddleware.Changes.EffectiveConsistency
+		}
+	}
+	return mount.ConsistencyDefault
+}
+
 // PushMiddleware pushes a new applied middleware onto the mount point's
 // middleware stack
-func (m *MountPoint) PushMiddleware(middleware mountpoint.Middleware, changes mountpoint.Changes, clock int) {
+func (m *MountPoint) PushMiddleware(middleware mountpoint.Middleware, changes types.MountPointChanges, clock int) {
 	appliedMiddleware := AppliedMountPointMiddleware{
 		Name:       middleware.Name(),
 		middleware: &middleware,

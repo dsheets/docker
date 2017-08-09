@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/docker/docker/api/types"
 	mounttypes "github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/plugingetter"
 	"github.com/docker/docker/volume/mountpoint"
@@ -307,14 +308,14 @@ func middlewareMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
 		SizeBytes:         sizeBytes,
 		MountMode:         mode,
 		Options:           options,
-		AppliedMiddleware: middlewareAppliedMiddlewareOfAppliedMiddleware(mp.AppliedMiddleware),
+		AppliedMiddleware: MountPointAppliedMiddlewareOfAppliedMountPointMiddleware(mp.AppliedMiddleware),
 	}
 }
 
-func middlewareAppliedMiddlewareOfAppliedMiddleware(middleware []AppliedMountPointMiddleware) []mountpoint.AppliedMiddleware {
-	ms := []mountpoint.AppliedMiddleware{}
+func MountPointAppliedMiddlewareOfAppliedMountPointMiddleware(middleware []AppliedMountPointMiddleware) []types.MountPointAppliedMiddleware {
+	ms := []types.MountPointAppliedMiddleware{}
 	for _, m := range middleware {
-		ms = append(ms, mountpoint.AppliedMiddleware{
+		ms = append(ms, types.MountPointAppliedMiddleware{
 			Name:    m.Name,
 			Changes: m.Changes,
 		})

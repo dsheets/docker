@@ -391,14 +391,28 @@ type DefaultNetworkSettings struct {
 // MountPoint represents a mount point configuration inside the container.
 // This is used for reporting the mountpoints in use by a container.
 type MountPoint struct {
-	Type        mount.Type `json:",omitempty"`
-	Name        string     `json:",omitempty"`
-	Source      string
-	Destination string
-	Driver      string `json:",omitempty"`
-	Mode        string
-	RW          bool
-	Propagation mount.Propagation
+	Type                 mount.Type `json:",omitempty"`
+	Name                 string     `json:",omitempty"`
+	Source               string
+	EffectiveSource      string `json:",omitempty"`
+	Destination          string
+	Driver               string `json:",omitempty"`
+	Mode                 string
+	RW                   bool
+	Propagation          mount.Propagation
+	Consistency          mount.Consistency             `json:",omitempty"`
+	EffectiveConsistency mount.Consistency             `json:",omitempty"`
+	AppliedMiddleware    []MountPointAppliedMiddleware `json:",omitempty"`
+}
+
+type MountPointAppliedMiddleware struct {
+	Name    string
+	Changes MountPointChanges `json:",omitempty"`
+}
+
+type MountPointChanges struct {
+	EffectiveSource      string            `json:",omitempty"`
+	EffectiveConsistency mount.Consistency `json:",omitempty"`
 }
 
 // NetworkResource is the body of the "get network" http response message

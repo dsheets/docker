@@ -3,6 +3,7 @@ package mountpoint
 import (
 	"os"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
 )
 
@@ -71,17 +72,7 @@ type AttachResponse struct {
 // Attachment describes how the middleware will interact with the mount
 type Attachment struct {
 	Attach  bool
-	Changes Changes `json:",omitempty"`
-}
-
-// Changes describes the changes middleware made to the
-// mount (if any)
-type Changes struct {
-	EffectiveSource string
-
-	// from api/types/mount
-	Consistency mount.Consistency `json:",omitempty"`
-	//Labels      map[string]string `json:",omitempty"`
+	Changes types.MountPointChanges `json:",omitempty"`
 }
 
 // DetachRequest holds data required for mount point middleware detachment interposition
@@ -105,7 +96,8 @@ type DetachResponse struct {
 // to mount point middleware. Pattern and Changes should be the same
 // shape as this type.
 type MountPoint struct {
-	EffectiveSource string
+	EffectiveSource      string
+	EffectiveConsistency mount.Consistency `json:",omitempty"`
 	// from volume/volume#MountPoint
 	Source      string
 	Destination string
@@ -117,7 +109,7 @@ type MountPoint struct {
 	Propagation mount.Propagation `json:",omitempty"`
 	ID          string            `json:",omitempty"`
 
-	AppliedMiddleware []AppliedMiddleware
+	AppliedMiddleware []types.MountPointAppliedMiddleware
 
 	// from api/types/mount
 	Consistency mount.Consistency `json:",omitempty"`
@@ -143,17 +135,10 @@ const (
 	GlobalScope Scope = "global"
 )
 
-// AppliedMiddleware is the representation of mount point middleware already
-// applied to a mount point as exposed to later mount point middleware in
-// the stack
-type AppliedMiddleware struct {
-	Name    string
-	Changes Changes
-}
-
 // Pattern is a description of a class of MountPoints
 type Pattern struct {
-	EffectiveSource []StringPattern `json:",omitempty"`
+	EffectiveSource      []StringPattern    `json:",omitempty"`
+	EffectiveConsistency *mount.Consistency `json:",omitempty"`
 	// from volume/volume#MountPoint
 	Source      []StringPattern    `json:",omitempty"`
 	Destination []StringPattern    `json:",omitempty"`
@@ -205,10 +190,10 @@ type AppliedMiddlewarePattern struct {
 
 // ChangesPattern is a description of a class of mount point changes
 type ChangesPattern struct {
-	EffectiveSource []StringPattern `json:",omitempty"`
+	EffectiveSource      []StringPattern    `json:",omitempty"`
+	EffectiveConsistency *mount.Consistency `json:",omitempty"`
 
 	// from api/types/mount
-	Consistency *mount.Consistency `json:",omitempty"`
 	//Labels      map[string]string `json:",omitempty"`
 }
 

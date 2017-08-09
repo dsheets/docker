@@ -3,6 +3,8 @@ package mountpoint
 import (
 	"path/filepath"
 	"strings"
+
+	"github.com/docker/docker/api/types"
 )
 
 // PatternMatches determines if a pattern matches a mount point
@@ -13,6 +15,10 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 		if !stringPatternMatches(pattern, mount.EffectiveSource) {
 			return false
 		}
+	}
+
+	if pattern.EffectiveConsistency != nil && *pattern.EffectiveConsistency != mount.EffectiveConsistency {
+		return false
 	}
 
 	for _, pattern := range pattern.Source {
@@ -96,7 +102,7 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 	return true
 }
 
-func appliedMiddlewareStackPatternMatches(pattern AppliedMiddlewareStackPattern, appliedMiddleware []AppliedMiddleware) bool {
+func appliedMiddlewareStackPatternMatches(pattern AppliedMiddlewareStackPattern, appliedMiddleware []types.MountPointAppliedMiddleware) bool {
 
 	if !middlewareExist(pattern.Exists, appliedMiddleware, false) {
 		return false
@@ -143,7 +149,7 @@ func appliedMiddlewareStackPatternMatches(pattern AppliedMiddlewareStackPattern,
 	return true
 }
 
-func middlewareExist(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
+func middlewareExist(patterns []AppliedMiddlewarePattern, middleware []types.MountPointAppliedMiddleware, not bool) bool {
 	for _, middlewarePattern := range patterns {
 		matched := false
 		for _, middleware := range middleware {
@@ -161,7 +167,7 @@ func middlewareExist(patterns []AppliedMiddlewarePattern, middleware []AppliedMi
 	return true
 }
 
-func middlewareAll(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
+func middlewareAll(patterns []AppliedMiddlewarePattern, middleware []types.MountPointAppliedMiddleware, not bool) bool {
 	for _, middlewarePattern := range patterns {
 		matched := true
 		for _, middleware := range middleware {
@@ -179,7 +185,7 @@ func middlewareAll(patterns []AppliedMiddlewarePattern, middleware []AppliedMidd
 	return true
 }
 
-func middlewareAnySequence(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
+func middlewareAnySequence(patterns []AppliedMiddlewarePattern, middleware []types.MountPointAppliedMiddleware, not bool) bool {
 	anySequenceCount := len(patterns)
 	appliedMiddlewareCount := len(middleware)
 	if anySequenceCount > 0 {
@@ -209,7 +215,7 @@ func middlewareAnySequence(patterns []AppliedMiddlewarePattern, middleware []App
 	return true
 }
 
-func middlewareTopSequence(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
+func middlewareTopSequence(patterns []AppliedMiddlewarePattern, middleware []types.MountPointAppliedMiddleware, not bool) bool {
 	topSequenceCount := len(patterns)
 	appliedMiddlewareCount := len(middleware)
 	if topSequenceCount > 0 {
@@ -232,7 +238,7 @@ func middlewareTopSequence(patterns []AppliedMiddlewarePattern, middleware []App
 	return true
 }
 
-func middlewareBottomSequence(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
+func middlewareBottomSequence(patterns []AppliedMiddlewarePattern, middleware []types.MountPointAppliedMiddleware, not bool) bool {
 	bottomSequenceCount := len(patterns)
 	appliedMiddlewareCount := len(middleware)
 	if bottomSequenceCount > 0 {
@@ -256,7 +262,7 @@ func middlewareBottomSequence(patterns []AppliedMiddlewarePattern, middleware []
 	return true
 }
 
-func middlewareRelativeOrder(patterns []AppliedMiddlewarePattern, middleware []AppliedMiddleware, not bool) bool {
+func middlewareRelativeOrder(patterns []AppliedMiddlewarePattern, middleware []types.MountPointAppliedMiddleware, not bool) bool {
 	relativeOrderCount := len(patterns)
 	appliedMiddlewareCount := len(middleware)
 	if relativeOrderCount > 0 {
@@ -282,7 +288,7 @@ func middlewareRelativeOrder(patterns []AppliedMiddlewarePattern, middleware []A
 	return true
 }
 
-func appliedMiddlewarePatternMatches(pattern AppliedMiddlewarePattern, appliedMiddleware AppliedMiddleware) bool {
+func appliedMiddlewarePatternMatches(pattern AppliedMiddlewarePattern, appliedMiddleware types.MountPointAppliedMiddleware) bool {
 	for _, spattern := range pattern.Name {
 		if !stringPatternMatches(spattern, appliedMiddleware.Name) {
 			return false
@@ -296,7 +302,7 @@ func appliedMiddlewarePatternMatches(pattern AppliedMiddlewarePattern, appliedMi
 	return true
 }
 
-func changesPatternMatches(pattern ChangesPattern, changes Changes) bool {
+func changesPatternMatches(pattern ChangesPattern, changes types.MountPointChanges) bool {
 
 	for _, pattern := range pattern.EffectiveSource {
 		if !stringPatternMatches(pattern, changes.EffectiveSource) {
@@ -304,7 +310,7 @@ func changesPatternMatches(pattern ChangesPattern, changes Changes) bool {
 		}
 	}
 
-	if pattern.Consistency != nil && *pattern.Consistency != changes.Consistency {
+	if pattern.EffectiveConsistency != nil && *pattern.EffectiveConsistency != changes.EffectiveConsistency {
 		return false
 	}
 
