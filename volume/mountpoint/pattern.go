@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/docker/api/types"
+	"gopkg.in/dsheets/docker.v999/api/types"
 )
 
 // PatternMatches determines if a pattern matches a mount point

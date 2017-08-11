@@ -1,8 +1,8 @@
 package mountpoint
 
 import (
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
+	"gopkg.in/dsheets/docker.v999/api/types"
 )
 
 // Type represents the type of a mount.
