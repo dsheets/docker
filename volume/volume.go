@@ -123,6 +123,10 @@ type MountPoint struct {
 	// Spec is a copy of the API request that created this mount.
 	Spec mounttypes.Mount
 
+	// Consistency is the user-requested minimum consistency required
+	// for file system data on the mount point
+	Consistency mounttypes.Consistency
+
 	// AppliedMiddleware is the stack of mount point middleware that has been applied to this mount
 	AppliedMiddleware []AppliedMountPointMiddleware
 
@@ -294,6 +298,7 @@ func ParseMountRaw(raw, volumeDriver string) (*MountPoint, error) {
 
 	spec.Type = detectMountType(spec.Source)
 	spec.ReadOnly = !ReadWrite(mode)
+	spec.Consistency = consistencyOfMode(mode)
 
 	// cannot assume that if a volume driver is passed in that we should set it
 	if volumeDriver != "" && spec.Type == mounttypes.TypeVolume {
@@ -333,6 +338,7 @@ func ParseMountSpec(cfg mounttypes.Mount, options ...func(*validateOpts)) (*Moun
 		RW:          !cfg.ReadOnly,
 		Destination: clean(convertSlash(cfg.Target)),
 		Type:        cfg.Type,
+		Consistency: cfg.Consistency,
 		Spec:        cfg,
 	}
 
@@ -374,4 +380,18 @@ func errInvalidMode(mode string) error {
 
 func errInvalidSpec(spec string) error {
 	return validationError{errors.Errorf("invalid volume specification: '%s'", spec)}
+}
+
+func consistencyOfMode(mode string) mounttypes.Consistency {
+	for _, o := range strings.Split(mode, ",") {
+		if o == "consistent" {
+			return mounttypes.ConsistencyFull
+		} else if o == "cached" {
+			return mounttypes.ConsistencyCached
+		} else if o == "delegated" {
+			return mounttypes.ConsistencyDelegated
+		}
+	}
+
+	return mounttypes.ConsistencyDefault
 }

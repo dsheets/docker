@@ -477,7 +477,7 @@ func (container *Container) GetMountPoints() []types.MountPoint {
 			Mode:                 m.Mode,
 			RW:                   m.RW,
 			Propagation:          m.Propagation,
-			Consistency:          m.Spec.Consistency,
+			Consistency:          m.Consistency,
 			EffectiveConsistency: m.EffectiveConsistency(),
 			AppliedMiddleware:    volume.MountPointAppliedMiddlewareOfAppliedMountPointMiddleware(m.AppliedMiddleware),
 		})
