@@ -20,8 +20,6 @@ var roModes = map[string]bool{
 	"ro": true,
 }
 
-var platformRawValidationOpts = []func(*validateOpts){}
-
 const (
 	// Spec should be in the format [source:]destination[:mode]
 	//

@@ -45,9 +45,13 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 			return nil, err
 		}
 
-		err := m.Realize()
-		if err != nil {
+		if err := m.Realize(); err != nil {
 			return nil, err
+		}
+		if m.CreateSourceIfMissing {
+			if err := daemon.dontBindDockerSockDuringShutdown(m); err != nil {
+				return nil, err
+			}
 		}
 		if !c.TrySetNetworkMount(m.Destination, m.Source) {
 			if m.Volume != nil {
@@ -62,8 +66,7 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 			}
 			mountPoints = append(mountPoints, m)
 		} else {
-			err := m.Setup(c.MountLabel, rootIDs, daemon.dontBindDockerSockDuringShutdown)
-			if err != nil {
+			if err := m.Setup(c.MountLabel, rootIDs); err != nil {
 				return nil, err
 			}
 		}
@@ -75,8 +78,7 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 	}
 
 	for _, m := range mountPoints {
-		err := m.Setup(c.MountLabel, rootIDs, daemon.dontBindDockerSockDuringShutdown)
-		if err != nil {
+		if err := m.Setup(c.MountLabel, rootIDs); err != nil {
 			return nil, err
 		}
 	}
@@ -248,8 +250,8 @@ func (daemon *Daemon) dontBindDockerSockDuringShutdown(m *volume.MountPoint) err
 	// start if it is trying to mount the socket the daemon is
 	// listening on. During daemon shutdown, the socket
 	// (/var/run/docker.sock by default) doesn't exist anymore causing
-	// the call to m.Setup to create at directory instead. This in
-	// turn will prevent the daemon to restart.
+	// the call to m.Setup to create a directory instead. This in
+	// turn will prevent the daemon from restarting.
 	if _, exist := daemon.hosts[m.Source]; exist && daemon.IsShuttingDown() {
 		return fmt.Errorf("Could not mount %q to container while the daemon is shutting down", m.Source)
 	}

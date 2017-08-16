@@ -11,13 +11,6 @@ import (
 	mounttypes "github.com/docker/docker/api/types/mount"
 )
 
-var platformRawValidationOpts = []func(o *validateOpts){
-	// need to make sure to not error out if the bind source does not exist on unix
-	// this is supported for historical reasons, the path will be automatically
-	// created later.
-	func(o *validateOpts) { o.skipBindSourceCheck = true },
-}
-
 // read-write modes
 var rwModes = map[string]bool{
 	"rw": true,

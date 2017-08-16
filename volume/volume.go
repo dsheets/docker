@@ -123,6 +123,11 @@ type MountPoint struct {
 	// Spec is a copy of the API request that created this mount.
 	Spec mounttypes.Mount
 
+	// CreateSourceIfMissing indicates whether the source should be created
+	// if it does not already exist (e.g. true for -v /missing:/mnt
+	// and false for --mount)
+	CreateSourceIfMissing bool
+
 	// Consistency is the user-requested minimum consistency required
 	// for file system data on the mount point
 	Consistency mounttypes.Consistency
@@ -183,17 +188,8 @@ func (m *MountPoint) Realize() error {
 // performing SELinux relabeling if necessary. The optional checkFun
 // parameter allows additional checking before creating the source
 // directory on the host.
-func (m *MountPoint) Setup(mountLabel string, rootIDs idtools.IDPair, checkFun func(m *MountPoint) error) error {
-
-	if m.Type == mounttypes.TypeBind {
-		// Before creating the source directory on the host, invoke checkFun if it's not nil. One of
-		// the use case is to forbid creating the daemon socket as a directory if the daemon is in
-		// the process of shutting down.
-		if checkFun != nil {
-			if err := checkFun(m); err != nil {
-				return err
-			}
-		}
+func (m *MountPoint) Setup(mountLabel string, rootIDs idtools.IDPair) error {
+	if m.Type == mounttypes.TypeBind && m.CreateSourceIfMissing {
 		// idtools.MkdirAllAndChownNew() produces an error if m.EffectiveSource() exists and is a file (not a directory)
 		// also, makes sure that if the directory is created, the correct remapped rootUID/rootGID will own it
 		if err := idtools.MkdirAllAndChownNew(m.EffectiveSource(), 0755, rootIDs); err != nil {
@@ -319,9 +315,10 @@ func ParseMountRaw(raw, volumeDriver string) (*MountPoint, error) {
 		}
 	}
 
-	mp, err := ParseMountSpec(spec, platformRawValidationOpts...)
+	mp, err := ParseMountSpec(spec)
 	if mp != nil {
 		mp.Mode = mode
+		mp.CreateSourceIfMissing = true
 	}
 	if err != nil {
 		err = errors.Wrap(err, errInvalidSpec(raw).Error())
@@ -330,8 +327,8 @@ func ParseMountRaw(raw, volumeDriver string) (*MountPoint, error) {
 }
 
 // ParseMountSpec reads a mount config, validates it, and configures a mountpoint from it.
-func ParseMountSpec(cfg mounttypes.Mount, options ...func(*validateOpts)) (*MountPoint, error) {
-	if err := validateMountConfig(&cfg, options...); err != nil {
+func ParseMountSpec(cfg mounttypes.Mount) (*MountPoint, error) {
+	if err := validateMountConfig(&cfg); err != nil {
 		return nil, validationError{err}
 	}
 	mp := &MountPoint{

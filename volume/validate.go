@@ -2,25 +2,13 @@ package volume
 
 import (
 	"fmt"
-	"os"
 	"runtime"
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/pkg/errors"
 )
 
-var errBindNotExist = errors.New("bind source path does not exist")
-
-type validateOpts struct {
-	skipBindSourceCheck bool
-}
-
-func validateMountConfig(mnt *mount.Mount, options ...func(*validateOpts)) error {
-	opts := validateOpts{}
-	for _, o := range options {
-		o(&opts)
-	}
-
+func validateMountConfig(mnt *mount.Mount) error {
 	if len(mnt.Target) == 0 {
 		return &errMountConfig{mnt, errMissingField("Target")}
 	}
@@ -52,20 +40,6 @@ func validateMountConfig(mnt *mount.Mount, options ...func(*validateOpts)) error
 
 		if err := validateAbsolute(mnt.Source); err != nil {
 			return &errMountConfig{mnt, err}
-		}
-
-		// Do not allow binding to non-existent path
-		if !opts.skipBindSourceCheck {
-			fi, err := os.Stat(mnt.Source)
-			if err != nil {
-				if !os.IsNotExist(err) {
-					return &errMountConfig{mnt, err}
-				}
-				return &errMountConfig{mnt, errBindNotExist}
-			}
-			if err := validateStat(fi); err != nil {
-				return &errMountConfig{mnt, err}
-			}
 		}
 	case mount.TypeVolume:
 		if mnt.BindOptions != nil {
