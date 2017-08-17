@@ -164,14 +164,16 @@ func (m *MountPoint) Cleanup() error {
 // Postcondition: after a successful call, m.Source will contain the path of the mount point
 func (m *MountPoint) Realize() error {
 	if m.Volume != nil {
-		if m.ID == "" {
-			m.ID = stringid.GenerateNonCryptoID()
+		id := m.ID
+		if id == "" {
+			id = stringid.GenerateNonCryptoID()
 		}
-		path, err := m.Volume.Mount(m.ID)
+		path, err := m.Volume.Mount(id)
 		if err != nil {
 			return errors.Wrapf(err, "error while mounting volume '%s'", m.Source)
 		}
 
+		m.ID = id
 		m.active++
 		m.Source = path
 	}
