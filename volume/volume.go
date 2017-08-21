@@ -204,6 +204,11 @@ func (m *MountPoint) Setup(mountLabel string, rootIDs idtools.IDPair) error {
 				}
 			}
 		}
+	} else if _, err := os.Stat(m.EffectiveSource()); os.IsNotExist(err) {
+		if m.Source == m.EffectiveSource() {
+			return fmt.Errorf("bind mount source %s not found", m.Source)
+		}
+		return fmt.Errorf("bind mount effective source %s (mounted as %s) not found", m.EffectiveSource(), m.Source)
 	}
 
 	if label.RelabelNeeded(m.Mode) {
