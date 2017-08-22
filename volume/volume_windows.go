@@ -202,10 +202,3 @@ func clean(p string) string {
 	}
 	return filepath.Clean(p)
 }
-
-func validateStat(fi os.FileInfo) error {
-	if !fi.IsDir() {
-		return fmt.Errorf("source path must be a directory")
-	}
-	return nil
-}

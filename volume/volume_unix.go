@@ -143,7 +143,3 @@ func detectMountType(p string) mounttypes.Type {
 func clean(p string) string {
 	return filepath.Clean(p)
 }
-
-func validateStat(fi os.FileInfo) error {
-	return nil
-}
