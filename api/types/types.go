@@ -405,11 +405,17 @@ type MountPoint struct {
 	AppliedMiddleware    []MountPointAppliedMiddleware `json:",omitempty"`
 }
 
+// MountPointAppliedMiddleware represents a specific piece of
+// middleware (referenced by Name) as applied to a mount
+// point. Changes contains any modifications the middleware made to
+// the mount point.
 type MountPointAppliedMiddleware struct {
 	Name    string
 	Changes MountPointChanges `json:",omitempty"`
 }
 
+// MountPointChanges represents the changes that a piece of mount
+// point middleware has made to a mount point.
 type MountPointChanges struct {
 	EffectiveSource      string            `json:",omitempty"`
 	EffectiveConsistency mount.Consistency `json:",omitempty"`
