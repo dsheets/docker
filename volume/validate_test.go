@@ -27,7 +27,6 @@ func TestValidateMount(t *testing.T) {
 		{mount.Mount{Type: mount.TypeBind}, errMissingField("Target")},
 		{mount.Mount{Type: mount.TypeBind, Target: testDestinationPath}, errMissingField("Source")},
 		{mount.Mount{Type: mount.TypeBind, Target: testDestinationPath, Source: testSourcePath, VolumeOptions: &mount.VolumeOptions{}}, errExtraField("VolumeOptions")},
-		{mount.Mount{Type: mount.TypeBind, Source: testSourcePath, Target: testDestinationPath}, errBindNotExist},
 		{mount.Mount{Type: mount.TypeBind, Source: testDir, Target: testDestinationPath}, nil},
 		{mount.Mount{Type: "invalid", Target: testDestinationPath}, errors.New("mount type unknown")},
 	}
