@@ -99,15 +99,16 @@ type MountPoint struct {
 	EffectiveSource      string
 	EffectiveConsistency mount.Consistency `json:",omitempty"`
 	// from volume/volume#MountPoint
-	Source      string
-	Destination string
-	ReadOnly    bool              `json:",omitempty"`
-	Name        string            `json:",omitempty"`
-	Driver      string            `json:",omitempty"`
-	Type        Type              `json:",omitempty"`
-	Mode        string            `json:",omitempty"`
-	Propagation mount.Propagation `json:",omitempty"`
-	ID          string            `json:",omitempty"`
+	Source                string
+	Destination           string
+	ReadOnly              bool              `json:",omitempty"`
+	Name                  string            `json:",omitempty"`
+	Driver                string            `json:",omitempty"`
+	Type                  Type              `json:",omitempty"`
+	Mode                  string            `json:",omitempty"`
+	Propagation           mount.Propagation `json:",omitempty"`
+	ID                    string            `json:",omitempty"`
+	CreateSourceIfMissing bool              `json:",omitempty"`
 
 	AppliedMiddleware []types.MountPointAppliedMiddleware
 
@@ -140,15 +141,16 @@ type Pattern struct {
 	EffectiveSource      []StringPattern    `json:",omitempty"`
 	EffectiveConsistency *mount.Consistency `json:",omitempty"`
 	// from volume/volume#MountPoint
-	Source      []StringPattern    `json:",omitempty"`
-	Destination []StringPattern    `json:",omitempty"`
-	ReadOnly    *bool              `json:",omitempty"`
-	Name        []StringPattern    `json:",omitempty"`
-	Driver      []StringPattern    `json:",omitempty"`
-	Type        *Type              `json:",omitempty"`
-	Mode        []StringPattern    `json:",omitempty"`
-	Propagation *mount.Propagation `json:",omitempty"`
-	ID          []StringPattern    `json:",omitempty"`
+	Source                []StringPattern    `json:",omitempty"`
+	Destination           []StringPattern    `json:",omitempty"`
+	ReadOnly              *bool              `json:",omitempty"`
+	Name                  []StringPattern    `json:",omitempty"`
+	Driver                []StringPattern    `json:",omitempty"`
+	Type                  *Type              `json:",omitempty"`
+	Mode                  []StringPattern    `json:",omitempty"`
+	Propagation           *mount.Propagation `json:",omitempty"`
+	ID                    []StringPattern    `json:",omitempty"`
+	CreateSourceIfMissing *bool              `json:",omitempty"`
 
 	AppliedMiddleware AppliedMiddlewareStackPattern
 

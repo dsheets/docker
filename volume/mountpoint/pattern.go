@@ -69,6 +69,10 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 		}
 	}
 
+	if pattern.CreateSourceIfMissing != nil && *pattern.CreateSourceIfMissing != mount.CreateSourceIfMissing {
+		return false
+	}
+
 	if !appliedMiddlewareStackPatternMatches(pattern.AppliedMiddleware, mount.AppliedMiddleware) {
 		return false
 	}

@@ -699,6 +699,7 @@ func TestPattern(t *testing.T) {
 		Mode:            "o=bind,foo=bar",
 		Propagation:     mount.PropagationShared,
 		ID:              "0123456789abcdef",
+		CreateSourceIfMissing: true,
 
 		AppliedMiddleware: []types.MountPointAppliedMiddleware{
 			{Name: "plugin:mountPointPlugin0"},
@@ -810,6 +811,14 @@ func TestPattern(t *testing.T) {
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
 		ID: []StringPattern{{Not: true, Exactly: "0123456789abcdef"}},
+	}
+	require.Equal(t, false, PatternMatches(pattern, mountpoint))
+	pattern = Pattern{
+		CreateSourceIfMissing: &tru,
+	}
+	require.Equal(t, true, PatternMatches(pattern, mountpoint))
+	pattern = Pattern{
+		CreateSourceIfMissing: &fals,
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
