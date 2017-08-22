@@ -122,9 +122,10 @@ func TestBackportMountSpec(t *testing.T) {
 				Source:      "/var/lib/docker/volumes/data",
 				CopyData:    true,
 				Spec: mounttypes.Mount{
-					Type:   mounttypes.TypeVolume,
-					Source: "data",
-					Target: "/banana",
+					Type:        mounttypes.TypeVolume,
+					Source:      "data",
+					Target:      "/banana",
+					Consistency: "default",
 				},
 			},
 			comment: "named volume",
