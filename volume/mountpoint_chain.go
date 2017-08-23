@@ -8,9 +8,11 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	mounttypes "github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/pkg/mount"
 	"github.com/docker/docker/pkg/plugingetter"
 	"github.com/docker/docker/volume/mountpoint"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // MountPointChain uses a list of mount point middleware to interpose
@@ -80,7 +82,7 @@ func (c *MountPointChain) AttachMounts(image *container.Config, container *conta
 					break
 				}
 				if attachment.Attach {
-					selectedMounts[k].PushMiddleware(middleware, attachment.Changes, mountPointClock)
+					selectedMounts[k].PushMiddleware(middleware, attachment.EmergencyDetach, attachment.Changes, mountPointClock)
 				}
 			}
 		}
@@ -138,6 +140,9 @@ func unwind(container string, mounts []*MountPoint) error {
 
 		if maxClock > 0 {
 			moreToUnwind = true
+
+			appliedMiddleware := []*AppliedMountPointMiddleware{}
+			detachingMounts := []*MountPoint{}
 			for _, mount := range mounts {
 				// if the top middleware on this mount isn't the next to
 				// detach, skip this mount
@@ -145,22 +150,25 @@ func unwind(container string, mounts []*MountPoint) error {
 					continue
 				}
 
-				appliedMiddleware := mount.PopMiddleware()
-				if appliedMiddleware != nil {
+				appliedM := mount.PopMiddleware()
+				if appliedM != nil {
 					// if we don't yet have the middleware object, get it
 					// otherwise, check that the name of the applied
 					// middleware for this mount is indeed the same as our
 					// middleware object
 					if middleware == nil {
-						m, e := appliedMiddleware.Middleware()
+						m, e := appliedM.Middleware()
 						if e != nil {
 							errString := fmt.Sprintf("unwind middleware retrieval error: \"%s\"", e)
 							return stackError(err, errString)
 						}
 						middleware = m
-					} else if (*middleware).Name() != appliedMiddleware.Name {
-						return fmt.Errorf("middleware inconsistency %s != %s", (*middleware).Name(), appliedMiddleware.Name)
+					} else if (*middleware).Name() != appliedM.Name {
+						return fmt.Errorf("middleware inconsistency %s != %s", (*middleware).Name(), appliedM.Name)
 					}
+
+					appliedMiddleware = append(appliedMiddleware, appliedM)
+					detachingMounts = append(detachingMounts, mount)
 				}
 			}
 			// send the middleware the mount point detach request and deal
@@ -168,8 +176,12 @@ func unwind(container string, mounts []*MountPoint) error {
 			request := &mountpoint.DetachRequest{container}
 			response, e := (*middleware).MountPointDetach(request)
 			if e != nil {
-				errString := fmt.Sprintf("unwind detach API error for %s: \"%s\"", (*middleware).Name(), e)
-				return stackError(err, errString)
+				logrus.Warnf("mount point middleware %s detach API error: \"%s\"", (*middleware).Name(), e)
+				var successfulDetach bool
+				successfulDetach, err = emergencyDetach(err, detachingMounts, appliedMiddleware)
+				if !successfulDetach {
+					return err
+				}
 			}
 			if !response.Success {
 				errString := fmt.Sprintf("unwind detach middleware %s error: \"%s\"", (*middleware).Name(), response.Err)
@@ -182,6 +194,64 @@ func unwind(container string, mounts []*MountPoint) error {
 		middleware = nil
 	}
 	return err
+}
+
+func emergencyDetach(error error, mounts []*MountPoint, appliedMiddleware []*AppliedMountPointMiddleware) (success bool, err error) {
+	success = true
+
+	effectiveSource := func(mount *MountPoint, appliedM *AppliedMountPointMiddleware) string {
+		if appliedM.Changes.EffectiveSource != "" {
+			return appliedM.Changes.EffectiveSource
+		}
+		return mount.EffectiveSource()
+	}
+
+	for i, appliedM := range appliedMiddleware {
+		if len(appliedM.Emergency) == 0 {
+			success = false
+			errString := fmt.Sprintf("after mount point middleware %s detach API error, mount point %s fatally lacks emergency detach sequence", appliedM.Name, effectiveSource(mounts[i], appliedM))
+			err = stackError(err, errString)
+		}
+
+		for _, action := range appliedM.Emergency {
+			if action.Error != "" {
+				err = stackError(err, action.Error)
+			}
+			if action.Fatal != "" {
+				err = stackError(err, action.Fatal)
+				success = false
+			}
+			if action.Remove != "" {
+				success, err = emergencyDetachRemove(success, err, action.Remove)
+			}
+			if action.Unmount != "" {
+				success, err = emergencyDetachUnmount(success, err, action.Unmount)
+			}
+			if action.Warning != "" {
+				logrus.Warnf("emergency mount point middleware %s detach from %s: %s", appliedM.Name, effectiveSource(mounts[i], appliedM), action.Warning)
+			}
+		}
+	}
+
+	return success, err
+}
+
+func emergencyDetachRemove(success bool, err error, path string) (bool, error) {
+	if e := os.Remove(path); e != nil {
+		errString := fmt.Sprintf("error removing path %s during emergency mount point detach: %s", path, e)
+		return false, stackError(err, errString)
+	}
+
+	return success, err
+}
+
+func emergencyDetachUnmount(success bool, err error, path string) (bool, error) {
+	if e := mount.Unmount(path); e != nil {
+		errString := fmt.Sprintf("error unmounting path %s during emergency mount point detach: %s", path, e)
+		return false, stackError(err, errString)
+	}
+
+	return success, err
 }
 
 // stackError will wrap err in errString if err is an error or create

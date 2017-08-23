@@ -14,10 +14,11 @@ import (
 // serialization/deserialization), how the middleware changed the
 // mount point if any, and the order of mount point application.
 type AppliedMountPointMiddleware struct {
-	Name       string                  // Name is the name of the middleware (for later lookup)
-	middleware *mountpoint.Middleware  // middleware stores the middleware object
-	Changes    types.MountPointChanges // Changes contains whatever changes the middleware has made to the mount
-	Clock      int                     // Clock is a positive integer used to ensure mount detachments occur in the correct order
+	Name       string                             // Name is the name of the middleware (for later lookup)
+	middleware *mountpoint.Middleware             // middleware stores the middleware object
+	Changes    types.MountPointChanges            // Changes contains whatever changes the middleware has made to the mount
+	Emergency  []mountpoint.EmergencyDetachAction // Emergency contains a sequence of actions to perform at detach time in the event that the plugin cannot be reached
+	Clock      int                                // Clock is a positive integer used to ensure mount detachments occur in the correct order
 }
 
 // Middleware will retrieve the Middleware object or create a new one if none is available
@@ -65,11 +66,12 @@ func (m *MountPoint) EffectiveConsistency() mount.Consistency {
 
 // PushMiddleware pushes a new applied middleware onto the mount point's
 // middleware stack
-func (m *MountPoint) PushMiddleware(middleware mountpoint.Middleware, changes types.MountPointChanges, clock int) {
+func (m *MountPoint) PushMiddleware(middleware mountpoint.Middleware, emergency []mountpoint.EmergencyDetachAction, changes types.MountPointChanges, clock int) {
 	appliedMiddleware := AppliedMountPointMiddleware{
 		Name:       middleware.Name(),
 		middleware: &middleware,
 		Changes:    changes,
+		Emergency:  emergency,
 		Clock:      clock,
 	}
 	m.AppliedMiddleware = append(m.AppliedMiddleware, appliedMiddleware)

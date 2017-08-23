@@ -71,8 +71,19 @@ type AttachResponse struct {
 
 // Attachment describes how the middleware will interact with the mount
 type Attachment struct {
-	Attach  bool
-	Changes types.MountPointChanges `json:",omitempty"`
+	Attach          bool
+	EmergencyDetach []EmergencyDetachAction `json:",omitempty"`
+	Changes         types.MountPointChanges `json:",omitempty"`
+}
+
+// EmergencyDetachAction is an action that the daemon will take on the
+// plugin's behalf if the plugin is unreachable at detach time
+type EmergencyDetachAction struct {
+	Error   string `josn:",omitempty"`
+	Fatal   string `json:",omitempty"`
+	Remove  string `json:",omitempty"`
+	Unmount string `json:",omitempty"`
+	Warning string `json:",omitempty"`
 }
 
 // DetachRequest holds data required for mount point middleware detachment interposition
