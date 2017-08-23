@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	mounttypes "github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/plugingetter"
 	"github.com/docker/docker/volume/mountpoint"
@@ -36,7 +37,7 @@ func NewMountPointChain(names []string, pg plugingetter.PluginGetter) (*MountPoi
 }
 
 // AttachMounts runs a list of mount attachments through a mount point middleware chain
-func (c *MountPointChain) AttachMounts(id string, mounts []*MountPoint) error {
+func (c *MountPointChain) AttachMounts(image *container.Config, container *container.Config, id string, mounts []*MountPoint) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -51,7 +52,7 @@ func (c *MountPointChain) AttachMounts(id string, mounts []*MountPoint) error {
 		// select mounts for this middleware
 		for _, mount := range mounts {
 			for _, pattern := range patterns {
-				if mountpoint.PatternMatches(pattern, middlewareMountPointOfMountPoint(mount)) {
+				if mountpoint.PatternMatches(pattern, middlewareMountPointOfMountPoint(image, container, mount)) {
 					selectedMounts = append(selectedMounts, mount)
 					break
 				}
@@ -62,7 +63,7 @@ func (c *MountPointChain) AttachMounts(id string, mounts []*MountPoint) error {
 			// send attachment request to the middleware
 			var pmounts []*mountpoint.MountPoint
 			for _, selectedMount := range selectedMounts {
-				pmounts = append(pmounts, middlewareMountPointOfMountPoint(selectedMount))
+				pmounts = append(pmounts, middlewareMountPointOfMountPoint(image, container, selectedMount))
 			}
 			request := &mountpoint.AttachRequest{id, pmounts}
 			response, err := middleware.MountPointAttach(request)
@@ -270,7 +271,7 @@ func mountPointTypeOfAPIType(t mounttypes.Type) mountpoint.Type {
 	return typ
 }
 
-func middlewareMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
+func middlewareMountPointOfMountPoint(image *container.Config, container *container.Config, mp *MountPoint) *mountpoint.MountPoint {
 	typ := mountPointTypeOfAPIType(mp.Type)
 	var labels map[string]string
 	var driverOptions map[string]string
@@ -289,6 +290,12 @@ func middlewareMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
 	if mp.Spec.TmpfsOptions != nil {
 		sizeBytes = mp.Spec.TmpfsOptions.SizeBytes
 		mode = mp.Spec.TmpfsOptions.Mode
+	}
+	c := mountpoint.Container{
+		Labels: container.Labels,
+	}
+	i := mountpoint.Image{
+		Labels: image.Labels,
 	}
 	return &mountpoint.MountPoint{
 		Source:          mp.Source,
@@ -311,6 +318,8 @@ func middlewareMountPointOfMountPoint(mp *MountPoint) *mountpoint.MountPoint {
 		MountMode:             mode,
 		Options:               options,
 		AppliedMiddleware:     MountPointAppliedMiddlewareOfAppliedMountPointMiddleware(mp.AppliedMiddleware),
+		Container:             c,
+		Image:                 i,
 	}
 }
 

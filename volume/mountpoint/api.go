@@ -98,6 +98,9 @@ type DetachResponse struct {
 type MountPoint struct {
 	EffectiveSource      string
 	EffectiveConsistency mount.Consistency `json:",omitempty"`
+
+	Container Container
+	Image     Image
 	// from volume/volume#MountPoint
 	Source                string
 	Destination           string
@@ -124,6 +127,18 @@ type MountPoint struct {
 
 	// from DetailedVolume cast
 	Options map[string]string `json:",omitempty"`
+}
+
+// Container describes a mount point plugin's view of a container object
+type Container struct {
+	// from api/types/container.Config
+	Labels map[string]string
+}
+
+// Image describes a mount point plugin's view of a container image
+type Image struct {
+	// from api/types/image_summary
+	Labels map[string]string
 }
 
 // Scope describes the accessibility of a volume

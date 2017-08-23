@@ -72,7 +72,7 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 		}
 	}
 
-	mounts, err = daemon.attachMounts(c.ID, mountPoints)
+	mounts, err = daemon.attachMounts(c, mountPoints)
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +96,13 @@ func (daemon *Daemon) setupMounts(c *container.Container) ([]container.Mount, er
 	return append(mounts, netMounts...), nil
 }
 
-func (daemon *Daemon) attachMounts(id string, mountPoints []*volume.MountPoint) (mounts []container.Mount, err error) {
-	err = daemon.configStore.MountPointChain.AttachMounts(id, mountPoints)
+func (daemon *Daemon) attachMounts(c *container.Container, mountPoints []*volume.MountPoint) (mounts []container.Mount, err error) {
+	image, err := daemon.GetImage(c.Config.Image)
+	if err != nil {
+		return nil, err // TODO: should wrap?
+	}
+
+	err = daemon.configStore.MountPointChain.AttachMounts(image.Config, c.Config, c.ID, mountPoints)
 	if err != nil {
 		return nil, err
 	}
