@@ -99,8 +99,8 @@ type MountPoint struct {
 	EffectiveSource      string
 	EffectiveConsistency mount.Consistency `json:",omitempty"`
 
-	Container Container
-	Image     Image
+	Container Container `json:",omitempty"`
+	Image     Image     `json:",omitempty"`
 	// from volume/volume#MountPoint
 	Source                string
 	Destination           string
@@ -132,13 +132,13 @@ type MountPoint struct {
 // Container describes a mount point plugin's view of a container object
 type Container struct {
 	// from api/types/container.Config
-	Labels map[string]string
+	Labels map[string]string `json:",omitempty"`
 }
 
 // Image describes a mount point plugin's view of a container image
 type Image struct {
 	// from api/types/image_summary
-	Labels map[string]string
+	Labels map[string]string `json:",omitempty"`
 }
 
 // Scope describes the accessibility of a volume
@@ -155,6 +155,9 @@ const (
 type Pattern struct {
 	EffectiveSource      []StringPattern    `json:",omitempty"`
 	EffectiveConsistency *mount.Consistency `json:",omitempty"`
+
+	Container ContainerPattern `json:",omitempty"`
+	Image     ImagePattern     `json:",omitempty"`
 	// from volume/volume#MountPoint
 	Source                []StringPattern    `json:",omitempty"`
 	Destination           []StringPattern    `json:",omitempty"`
@@ -180,6 +183,16 @@ type Pattern struct {
 	//MountMode *os.FileMode `json:",omitempty"`
 
 	Options []StringMapPattern `json:",omitempty"`
+}
+
+// ContainerPattern is a description of a class of MountPoint Containers
+type ContainerPattern struct {
+	Labels []StringMapPattern `json:",omitempty"`
+}
+
+// ImagePattern is a description of a class of MountPoint Images
+type ImagePattern struct {
+	Labels []StringMapPattern `json:",omitempty"`
 }
 
 // AppliedMiddlewareStackPattern is a description of a class of

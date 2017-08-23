@@ -700,6 +700,18 @@ func TestPattern(t *testing.T) {
 		Propagation:     mount.PropagationShared,
 		ID:              "0123456789abcdef",
 		CreateSourceIfMissing: true,
+		Container: Container{
+			Labels: map[string]string{
+				"clabel0": "value",
+				"clabel1": "",
+			},
+		},
+		Image: Image{
+			Labels: map[string]string{
+				"ilabel0": "value",
+				"ilabel1": "",
+			},
+		},
 
 		AppliedMiddleware: []types.MountPointAppliedMiddleware{
 			{Name: "plugin:mountPointPlugin0"},
@@ -819,6 +831,50 @@ func TestPattern(t *testing.T) {
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
 		CreateSourceIfMissing: &fals,
+	}
+	require.Equal(t, false, PatternMatches(pattern, mountpoint))
+
+	pattern = Pattern{
+		Container: ContainerPattern{
+			Labels: []StringMapPattern{{
+				Exists: []StringMapKeyValuePattern{
+					{Key: StringPattern{Exactly: "clabel0"}},
+				},
+			}},
+		},
+	}
+	require.Equal(t, true, PatternMatches(pattern, mountpoint))
+	pattern = Pattern{
+		Container: ContainerPattern{
+			Labels: []StringMapPattern{{
+				Not: true,
+				Exists: []StringMapKeyValuePattern{
+					{Key: StringPattern{Exactly: "clabel0"}},
+				},
+			}},
+		},
+	}
+	require.Equal(t, false, PatternMatches(pattern, mountpoint))
+
+	pattern = Pattern{
+		Image: ImagePattern{
+			Labels: []StringMapPattern{{
+				Exists: []StringMapKeyValuePattern{
+					{Key: StringPattern{Exactly: "ilabel0"}},
+				},
+			}},
+		},
+	}
+	require.Equal(t, true, PatternMatches(pattern, mountpoint))
+	pattern = Pattern{
+		Image: ImagePattern{
+			Labels: []StringMapPattern{{
+				Not: true,
+				Exists: []StringMapKeyValuePattern{
+					{Key: StringPattern{Exactly: "ilabel0"}},
+				},
+			}},
+		},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 

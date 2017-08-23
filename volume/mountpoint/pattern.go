@@ -21,6 +21,14 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 		return false
 	}
 
+	if !containerPatternMatches(pattern.Container, mount.Container) {
+		return false
+	}
+
+	if !imagePatternMatches(pattern.Image, mount.Image) {
+		return false
+	}
+
 	for _, pattern := range pattern.Source {
 		if !stringPatternMatches(pattern, mount.Source) {
 			return false
@@ -99,6 +107,26 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 
 	for _, pattern := range pattern.Options {
 		if !stringMapPatternMatches(pattern, mount.Options) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func containerPatternMatches(pattern ContainerPattern, container Container) bool {
+	for _, pattern := range pattern.Labels {
+		if !stringMapPatternMatches(pattern, container.Labels) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func imagePatternMatches(pattern ImagePattern, image Image) bool {
+	for _, pattern := range pattern.Labels {
+		if !stringMapPatternMatches(pattern, image.Labels) {
 			return false
 		}
 	}
