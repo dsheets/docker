@@ -63,6 +63,20 @@ func TestStringPatternSuffix(t *testing.T) {
 		})
 }
 
+func TestStringPatternPathContains(t *testing.T) {
+	testStringPatternInverse(StringPattern{PathContains: "///a/./b/c/../foo"},
+		func(pattern StringPattern, tru, fals bool) {
+			require.Equal(t, fals, stringPatternMatches(pattern, "/a/b/fo"))
+			require.Equal(t, tru, stringPatternMatches(pattern, "/a/b/foo"))
+			require.Equal(t, tru, stringPatternMatches(pattern, "/a/b/foo/"))
+			require.Equal(t, fals, stringPatternMatches(pattern, "/a/b/foobar"))
+			require.Equal(t, fals, stringPatternMatches(pattern, "/a/b/foo/bar"))
+			require.Equal(t, fals, stringPatternMatches(pattern, "/a//b/c/d/../../foo/./bar"))
+			require.Equal(t, tru, stringPatternMatches(pattern, "/a//b/c/.."))
+			require.Equal(t, tru, stringPatternMatches(pattern, "/"))
+		})
+}
+
 func TestStringPatternExactly(t *testing.T) {
 	testStringPatternInverse(StringPattern{Exactly: "xyz"},
 		func(pattern StringPattern, tru, fals bool) {

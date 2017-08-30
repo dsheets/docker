@@ -257,10 +257,11 @@ type StringMapKeyValuePattern struct {
 type StringPattern struct {
 	Not bool `json:",omitempty"`
 
-	Empty      bool   `json:",omitempty"`
-	Prefix     string `json:",omitempty"`
-	PathPrefix string `json:",omitempty"`
-	Suffix     string `json:",omitempty"`
-	Exactly    string `json:",omitempty"`
-	Contains   string `json:",omitempty"`
+	Empty        bool   `json:",omitempty"`
+	Prefix       string `json:",omitempty"`
+	PathPrefix   string `json:",omitempty"`
+	Suffix       string `json:",omitempty"`
+	PathContains string `json:",omitempty"`
+	Exactly      string `json:",omitempty"`
+	Contains     string `json:",omitempty"`
 }

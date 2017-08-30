@@ -404,18 +404,7 @@ func stringPatternMatches(pattern StringPattern, string string) bool {
 	}
 
 	if pattern.PathPrefix != "" {
-		cleanPath := filepath.Clean(string)
-		cleanPattern := filepath.Clean(pattern.PathPrefix)
-		patternLen := len(cleanPattern)
-
-		matched := strings.HasPrefix(cleanPath, cleanPattern)
-		if matched && cleanPattern[patternLen-1] != '/' {
-			if len(cleanPath) > patternLen && cleanPath[patternLen] != '/' {
-				matched = false
-			}
-		}
-
-		if matched == pattern.Not {
+		if !pathPrefix(pattern.PathPrefix, string, pattern.Not) {
 			return false
 		}
 	}
@@ -424,11 +413,36 @@ func stringPatternMatches(pattern StringPattern, string string) bool {
 		return false
 	}
 
+	if pattern.PathContains != "" {
+		if !pathPrefix(string, pattern.PathContains, pattern.Not) {
+			return false
+		}
+	}
+
 	if pattern.Exactly != "" && (pattern.Exactly == string) == pattern.Not {
 		return false
 	}
 
 	if pattern.Contains != "" && strings.Contains(string, pattern.Contains) == pattern.Not {
+		return false
+	}
+
+	return true
+}
+
+func pathPrefix(prefix string, string string, not bool) bool {
+	cleanPath := filepath.Clean(string)
+	cleanPattern := filepath.Clean(prefix)
+	patternLen := len(cleanPattern)
+
+	matched := strings.HasPrefix(cleanPath, cleanPattern)
+	if matched && cleanPattern[patternLen-1] != '/' {
+		if len(cleanPath) > patternLen && cleanPath[patternLen] != '/' {
+			matched = false
+		}
+	}
+
+	if matched == not {
 		return false
 	}
 
