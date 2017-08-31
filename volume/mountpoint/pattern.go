@@ -12,7 +12,7 @@ import (
 // must implement disjunction.
 func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 	for _, pattern := range pattern.EffectiveSource {
-		if !stringPatternMatches(pattern, mount.EffectiveSource) {
+		if !StringPatternMatches(pattern, mount.EffectiveSource) {
 			return false
 		}
 	}
@@ -30,13 +30,13 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 	}
 
 	for _, pattern := range pattern.Source {
-		if !stringPatternMatches(pattern, mount.Source) {
+		if !StringPatternMatches(pattern, mount.Source) {
 			return false
 		}
 	}
 
 	for _, pattern := range pattern.Destination {
-		if !stringPatternMatches(pattern, mount.Destination) {
+		if !StringPatternMatches(pattern, mount.Destination) {
 			return false
 		}
 	}
@@ -46,13 +46,13 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 	}
 
 	for _, pattern := range pattern.Name {
-		if !stringPatternMatches(pattern, mount.Name) {
+		if !StringPatternMatches(pattern, mount.Name) {
 			return false
 		}
 	}
 
 	for _, pattern := range pattern.Driver {
-		if !stringPatternMatches(pattern, mount.Driver) {
+		if !StringPatternMatches(pattern, mount.Driver) {
 			return false
 		}
 	}
@@ -62,7 +62,7 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 	}
 
 	for _, pattern := range pattern.Mode {
-		if !stringPatternMatches(pattern, mount.Mode) {
+		if !StringPatternMatches(pattern, mount.Mode) {
 			return false
 		}
 	}
@@ -72,7 +72,7 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 	}
 
 	for _, pattern := range pattern.ID {
-		if !stringPatternMatches(pattern, mount.ID) {
+		if !StringPatternMatches(pattern, mount.ID) {
 			return false
 		}
 	}
@@ -322,7 +322,7 @@ func middlewareRelativeOrder(patterns []AppliedMiddlewarePattern, middleware []t
 
 func appliedMiddlewarePatternMatches(pattern AppliedMiddlewarePattern, appliedMiddleware types.MountPointAppliedMiddleware) bool {
 	for _, spattern := range pattern.Name {
-		if !stringPatternMatches(spattern, appliedMiddleware.Name) {
+		if !StringPatternMatches(spattern, appliedMiddleware.Name) {
 			return false
 		}
 	}
@@ -337,7 +337,7 @@ func appliedMiddlewarePatternMatches(pattern AppliedMiddlewarePattern, appliedMi
 func changesPatternMatches(pattern ChangesPattern, changes types.MountPointChanges) bool {
 
 	for _, pattern := range pattern.EffectiveSource {
-		if !stringPatternMatches(pattern, changes.EffectiveSource) {
+		if !StringPatternMatches(pattern, changes.EffectiveSource) {
 			return false
 		}
 	}
@@ -359,8 +359,8 @@ func stringMapPatternMatches(pattern StringMapPattern, stringMap map[string]stri
 	for _, keyValuePattern := range pattern.Exists {
 		matched := false
 		for key, value := range stringMap {
-			if stringPatternMatches(keyValuePattern.Key, key) {
-				if stringPatternMatches(keyValuePattern.Value, value) {
+			if StringPatternMatches(keyValuePattern.Key, key) {
+				if StringPatternMatches(keyValuePattern.Value, value) {
 					matched = true
 					break
 				}
@@ -375,8 +375,8 @@ func stringMapPatternMatches(pattern StringMapPattern, stringMap map[string]stri
 	for _, keyValuePattern := range pattern.All {
 		matched := true
 		for key, value := range stringMap {
-			if stringPatternMatches(keyValuePattern.Key, key) {
-				if !stringPatternMatches(keyValuePattern.Value, value) {
+			if StringPatternMatches(keyValuePattern.Key, key) {
+				if !StringPatternMatches(keyValuePattern.Value, value) {
 					matched = false
 					break
 				}
@@ -394,7 +394,7 @@ func stringMapPatternMatches(pattern StringMapPattern, stringMap map[string]stri
 	return true
 }
 
-func stringPatternMatches(pattern StringPattern, string string) bool {
+func StringPatternMatches(pattern StringPattern, string string) bool {
 	if pattern.Empty && (len(string) == 0) == pattern.Not {
 		return false
 	}

@@ -16,88 +16,88 @@ func testStringPatternInverse(pattern StringPattern, f func(pattern StringPatter
 
 func TestStringPattern(t *testing.T) {
 	pattern := StringPattern{}
-	require.Equal(t, true, stringPatternMatches(pattern, ""))
-	require.Equal(t, true, stringPatternMatches(pattern, "asdf"))
+	require.Equal(t, true, StringPatternMatches(pattern, ""))
+	require.Equal(t, true, StringPatternMatches(pattern, "asdf"))
 
 	pattern = StringPattern{Not: true}
-	require.Equal(t, true, stringPatternMatches(pattern, ""))
-	require.Equal(t, true, stringPatternMatches(pattern, "asdf"))
+	require.Equal(t, true, StringPatternMatches(pattern, ""))
+	require.Equal(t, true, StringPatternMatches(pattern, "asdf"))
 }
 
 func TestStringPatternEmpty(t *testing.T) {
 	testStringPatternInverse(StringPattern{Empty: true},
 		func(pattern StringPattern, tru, fals bool) {
-			require.Equal(t, tru, stringPatternMatches(pattern, ""))
-			require.Equal(t, fals, stringPatternMatches(pattern, "asdf"))
+			require.Equal(t, tru, StringPatternMatches(pattern, ""))
+			require.Equal(t, fals, StringPatternMatches(pattern, "asdf"))
 		})
 }
 
 func TestStringPatternPrefix(t *testing.T) {
 	testStringPatternInverse(StringPattern{Prefix: "as"},
 		func(pattern StringPattern, tru, fals bool) {
-			require.Equal(t, fals, stringPatternMatches(pattern, ""))
-			require.Equal(t, fals, stringPatternMatches(pattern, "adsf"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "asdf"))
+			require.Equal(t, fals, StringPatternMatches(pattern, ""))
+			require.Equal(t, fals, StringPatternMatches(pattern, "adsf"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "asdf"))
 		})
 }
 
 func TestStringPatternPathPrefix(t *testing.T) {
 	testStringPatternInverse(StringPattern{PathPrefix: "///a/./b/c/../foo"},
 		func(pattern StringPattern, tru, fals bool) {
-			require.Equal(t, fals, stringPatternMatches(pattern, "/a/b/fo"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "/a/b/foo"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "/a/b/foo/"))
-			require.Equal(t, fals, stringPatternMatches(pattern, "/a/b/foobar"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "/a/b/foo/bar"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "/a//b/c/d/../../foo/./bar"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "/a/b/fo"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "/a/b/foo"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "/a/b/foo/"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "/a/b/foobar"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "/a/b/foo/bar"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "/a//b/c/d/../../foo/./bar"))
 		})
 }
 
 func TestStringPatternSuffix(t *testing.T) {
 	testStringPatternInverse(StringPattern{Suffix: ".dat"},
 		func(pattern StringPattern, tru, fals bool) {
-			require.Equal(t, fals, stringPatternMatches(pattern, ""))
-			require.Equal(t, tru, stringPatternMatches(pattern, ".dat"))
-			require.Equal(t, fals, stringPatternMatches(pattern, "foo.dab"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "/xyz/foo.dat"))
+			require.Equal(t, fals, StringPatternMatches(pattern, ""))
+			require.Equal(t, tru, StringPatternMatches(pattern, ".dat"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "foo.dab"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "/xyz/foo.dat"))
 		})
 }
 
 func TestStringPatternPathContains(t *testing.T) {
 	testStringPatternInverse(StringPattern{PathContains: "///a/./b/c/../foo"},
 		func(pattern StringPattern, tru, fals bool) {
-			require.Equal(t, fals, stringPatternMatches(pattern, "/a/b/fo"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "/a/b/foo"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "/a/b/foo/"))
-			require.Equal(t, fals, stringPatternMatches(pattern, "/a/b/foobar"))
-			require.Equal(t, fals, stringPatternMatches(pattern, "/a/b/foo/bar"))
-			require.Equal(t, fals, stringPatternMatches(pattern, "/a//b/c/d/../../foo/./bar"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "/a//b/c/.."))
-			require.Equal(t, tru, stringPatternMatches(pattern, "/"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "/a/b/fo"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "/a/b/foo"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "/a/b/foo/"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "/a/b/foobar"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "/a/b/foo/bar"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "/a//b/c/d/../../foo/./bar"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "/a//b/c/.."))
+			require.Equal(t, tru, StringPatternMatches(pattern, "/"))
 		})
 }
 
 func TestStringPatternExactly(t *testing.T) {
 	testStringPatternInverse(StringPattern{Exactly: "xyz"},
 		func(pattern StringPattern, tru, fals bool) {
-			require.Equal(t, fals, stringPatternMatches(pattern, ""))
-			require.Equal(t, fals, stringPatternMatches(pattern, "xy"))
-			require.Equal(t, fals, stringPatternMatches(pattern, "xyyz"))
-			require.Equal(t, fals, stringPatternMatches(pattern, "wxyz"))
-			require.Equal(t, fals, stringPatternMatches(pattern, "xyz0"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "xyz"))
+			require.Equal(t, fals, StringPatternMatches(pattern, ""))
+			require.Equal(t, fals, StringPatternMatches(pattern, "xy"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "xyyz"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "wxyz"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "xyz0"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "xyz"))
 		})
 }
 
 func TestStringPatternContains(t *testing.T) {
 	testStringPatternInverse(StringPattern{Contains: "xyz"},
 		func(pattern StringPattern, tru, fals bool) {
-			require.Equal(t, fals, stringPatternMatches(pattern, ""))
-			require.Equal(t, fals, stringPatternMatches(pattern, "xy"))
-			require.Equal(t, fals, stringPatternMatches(pattern, "xyyz"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "wxyz"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "xyz0"))
-			require.Equal(t, tru, stringPatternMatches(pattern, "xyz"))
+			require.Equal(t, fals, StringPatternMatches(pattern, ""))
+			require.Equal(t, fals, StringPatternMatches(pattern, "xy"))
+			require.Equal(t, fals, StringPatternMatches(pattern, "xyyz"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "wxyz"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "xyz0"))
+			require.Equal(t, tru, StringPatternMatches(pattern, "xyz"))
 		})
 }
 
