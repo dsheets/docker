@@ -393,7 +393,10 @@ func (cli *DaemonCli) reloadConfig() {
 			}
 			config.MountPointChain = chain
 		} else {
-			config.MountPointChain.SetPlugins(config.MountPointPlugins)
+			err := config.MountPointChain.SetPlugins(config.MountPointPlugins)
+			if err != nil {
+				logrus.Fatalf("Error instantiating mount point plugin chain: %s", err)
+			}
 		}
 
 		if err := cli.d.Reload(config); err != nil {
@@ -583,6 +586,12 @@ func (cli *DaemonCli) initMiddlewares(s *apiserver.Server, cfg *apiserver.Config
 		err := cli.Config.MountPointChain.AppendPluginIfMissing(name)
 		if err != nil {
 			logrus.Errorf("unable to load mount point plugin %s: %s", name, err)
+			plugin, err := pluginStore.GetV2Plugin(name)
+			if err != nil {
+				logrus.Errorf("unable to get mount point plugin object %s while recovering from load failure: %s", name, err)
+			} else {
+				pluginStore.SetState(plugin, false)
+			}
 		}
 	})
 
