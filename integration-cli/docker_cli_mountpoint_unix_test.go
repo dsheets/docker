@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/integration-cli/checker"
 	"github.com/docker/docker/integration-cli/daemon"
 	"github.com/docker/docker/pkg/plugins"
@@ -425,7 +426,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginChangeDirectory(c *check.C) 
 		Attachments: []mountpoint.Attachment{
 			{
 				Attach: true,
-				Changes: mountpoint.Changes{
+				Changes: types.MountPointChanges{
 					EffectiveSource: newdir,
 				},
 			},
@@ -544,7 +545,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginMultipleMounts(c *check.C) {
 		Attachments: []mountpoint.Attachment{
 			{
 				Attach: true,
-				Changes: mountpoint.Changes{
+				Changes: types.MountPointChanges{
 					EffectiveSource: "/usr",
 				},
 			},
@@ -558,7 +559,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginMultipleMounts(c *check.C) {
 		Attachments: []mountpoint.Attachment{
 			{
 				Attach: true,
-				Changes: mountpoint.Changes{
+				Changes: types.MountPointChanges{
 					EffectiveSource: "/etc",
 				},
 			},
