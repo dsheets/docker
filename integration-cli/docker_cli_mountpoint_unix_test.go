@@ -261,7 +261,7 @@ func (s *DockerMountPointSuite) TearDownSuite(c *check.C) {
 
 func (s *DockerMountPointSuite) TestMountPointPluginNoMounts(c *check.C) {
 	s.d.Start(c, fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	// Ensure command successful
 	out, err := s.d.Cmd("run", "-d", "busybox", "top")
@@ -277,7 +277,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginNoMounts(c *check.C) {
 
 func (s *DockerMountPointSuite) TestMountPointPluginError(c *check.C) {
 	s.d.Start(c, fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	s.ctrl[0].attachRes = mountpoint.AttachResponse{
 		Success: false,
@@ -293,7 +293,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginError(c *check.C) {
 
 func (s *DockerMountPointSuite) TestMountPointPluginFilter(c *check.C) {
 	s.d.Start(c, fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	// Ensure command successful
 	out, err := s.d.Cmd("run", "-d", "-v", "/host", "busybox", "top")
@@ -309,7 +309,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginFilter(c *check.C) {
 
 func (s *DockerMountPointSuite) TestMountPointPluginEnsureNoDuplicatePluginRegistration(c *check.C) {
 	s.d.Start(c, fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin), fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	out, err := s.d.Cmd("run", "-d", "-v", "/:/host", "busybox", "top")
 	c.Assert(err, check.IsNil, check.Commentf(out))
@@ -329,7 +329,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginAttachOrderBind(c *check.C) 
 		fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	out, err := s.d.Cmd("run", "-d", "-v", "/:/host", "busybox", "top")
 	c.Assert(err, check.IsNil, check.Commentf(out))
@@ -349,7 +349,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginVolumeFilter(c *check.C) {
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s2", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s3", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	out, err := s.d.Cmd("run", "-d", "-v", "/anon", "busybox", "top")
 	c.Assert(err, check.IsNil, check.Commentf(out))
@@ -368,7 +368,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginLocalFilter(c *check.C) {
 		fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s2", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	out, err := s.d.Cmd("volume", "create", "--opt", "type=tmpfs", "--opt", "device=tmpfs")
 	c.Assert(err, check.IsNil, check.Commentf(out))
@@ -392,7 +392,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginLocalBindFilter(c *check.C) 
 		fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s2", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	out, err := s.d.Cmd("volume", "create", "--opt", "device=/etc", "--opt", "o=ro,bind")
 	c.Assert(err, check.IsNil, check.Commentf(out))
@@ -415,7 +415,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginChangeDirectory(c *check.C) 
 	s.d.Start(c,
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s3", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	newdir := "/var/run/" + testMountPointPlugin + "1/newdir"
 	err := os.MkdirAll(newdir, 0700)
@@ -453,7 +453,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginFailureUnwind(c *check.C) {
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s2", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s4", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	s.ctrl[1].attachRes = mountpoint.AttachResponse{
 		Success: true,
@@ -504,7 +504,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginDetachExit(c *check.C) {
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s2", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s4", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	s.ctrl[1].attachRes = mountpoint.AttachResponse{
 		Success: true,
@@ -537,7 +537,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginMultipleMounts(c *check.C) {
 		fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s2", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	s.ctrl[0].attachRes = mountpoint.AttachResponse{
 		Success: true,
@@ -611,7 +611,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginDetachCleanFailure(c *check.
 	s.d.Start(c,
 		fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	s.ctrl[0].attachRes = mountpoint.AttachResponse{
 		Success: true,
@@ -647,7 +647,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginStopStart(c *check.C) {
 	s.d.Start(c,
 		fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	s.ctrl[0].attachRes = mountpoint.AttachResponse{
 		Success: true,
@@ -677,7 +677,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginKill(c *check.C) {
 	s.d.Start(c,
 		fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	s.ctrl[0].attachRes = mountpoint.AttachResponse{
 		Success: true,
@@ -706,7 +706,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginOOM(c *check.C) {
 	s.d.Start(c,
 		fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	s.ctrl[0].attachRes = mountpoint.AttachResponse{
 		Success: true,
@@ -738,7 +738,7 @@ func (s *DockerMountPointSuite) TestMountPointPluginDaemonRestart(c *check.C) {
 	s.d.Start(c, "--live-restore",
 		fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin),
 		fmt.Sprintf("--mount-point-plugin=%s1", testMountPointPlugin))
-	c.Assert(s.d.LoadBusybox(), check.IsNil)
+	s.d.LoadBusybox(c)
 
 	s.ctrl[0].attachRes = mountpoint.AttachResponse{
 		Success: true,
