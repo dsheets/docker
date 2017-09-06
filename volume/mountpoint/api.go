@@ -16,8 +16,6 @@ const (
 	TypeBind Type = "bind"
 	// TypeVolume is the type for remote storage volumes
 	TypeVolume Type = "volume"
-	// TypeTmpfs is the type for mounting tmpfs
-	TypeTmpfs Type = "tmpfs"
 )
 
 const (
