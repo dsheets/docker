@@ -182,8 +182,7 @@ func unwind(container string, mounts []*MountPoint) error {
 				if !successfulDetach {
 					return err
 				}
-			}
-			if !response.Success {
+			} else if !response.Success {
 				errString := fmt.Sprintf("unwind detach middleware %s error: \"%s\"", (*middleware).Name(), response.Err)
 				err = stackError(err, errString)
 				if !response.Recoverable {
