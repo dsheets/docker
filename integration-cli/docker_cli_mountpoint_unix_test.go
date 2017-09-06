@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -31,10 +32,10 @@ func init() {
 }
 
 type DockerMountPointSuite struct {
-	server [5]*httptest.Server
+	server [6]*httptest.Server
 	ds     *DockerSuite
 	d      *daemon.Daemon
-	ctrl   [5]*mountPointController
+	ctrl   [6]*mountPointController
 	events []string
 }
 
@@ -69,6 +70,8 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 	*s.ctrl[3] = *s.ctrl[0]
 	s.ctrl[4] = &mountPointController{}
 	*s.ctrl[4] = *s.ctrl[0]
+	s.ctrl[5] = &mountPointController{}
+	*s.ctrl[5] = *s.ctrl[0]
 
 	typeBind := mountpoint.TypeBind
 	typeVolume := mountpoint.TypeVolume
@@ -142,6 +145,20 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 			},
 		},
 	}
+	// matches all mounts into containers without a label 'allow'
+	s.ctrl[5].propertiesRes = mountpoint.PropertiesResponse{
+		Success: true,
+		Patterns: []mountpoint.Pattern{
+			{Container: mountpoint.ContainerPattern{
+				Labels: []mountpoint.StringMapPattern{{
+					Not: true,
+					Exists: []mountpoint.StringMapKeyValuePattern{{
+						Key: mountpoint.StringPattern{Exactly: "allow"},
+					}},
+				}},
+			}},
+		},
+	}
 
 	s.events = []string{}
 }
@@ -155,6 +172,7 @@ func (s *DockerMountPointSuite) TearDownTest(c *check.C) {
 		s.ctrl[2] = nil
 		s.ctrl[3] = nil
 		s.ctrl[4] = nil
+		s.ctrl[5] = nil
 
 		//logs, err := s.d.ReadLogFile()
 		//c.Assert(err, check.IsNil)
@@ -168,6 +186,7 @@ func (s *DockerMountPointSuite) SetUpSuite(c *check.C) {
 	s.setupPlugin(c, 2)
 	s.setupPlugin(c, 3)
 	s.setupPlugin(c, 4)
+	s.setupPlugin(c, 5)
 }
 
 func (s *DockerMountPointSuite) setupPlugin(c *check.C, i int) {
@@ -248,7 +267,7 @@ func (s *DockerMountPointSuite) setupPlugin(c *check.C, i int) {
 }
 
 func (s *DockerMountPointSuite) TearDownSuite(c *check.C) {
-	for i := 0; i < 5; i++ {
+	for i := 0; i < len(s.server); i++ {
 		if s.server[i] == nil {
 			continue
 		}
@@ -772,4 +791,62 @@ func (s *DockerMountPointSuite) TestMountPointPluginDaemonRestart(c *check.C) {
 
 	// no new plugin events have occurred without explicit plugin loading
 	c.Assert(s.events, checker.DeepEquals, []string{})
+}
+
+func (s *DockerMountPointSuite) TestMountPointPluginContainerLabel(c *check.C) {
+	s.d.Start(c, fmt.Sprintf("--mount-point-plugin=%s5", testMountPointPlugin))
+	s.d.LoadBusybox(c)
+
+	s.ctrl[5].attachRes = mountpoint.AttachResponse{
+		Success: false,
+		Err:     "only containers with 'allow' label are allowed to mount",
+	}
+
+	out, err := s.d.Cmd("run", "-d", "-v", "/:/host", "busybox", "true")
+	c.Assert(err, check.NotNil)
+	c.Assert(out, checker.HasSuffix, fmt.Sprintf("Error response from daemon: middleware plugin:%s5 failed with error: %s: only containers with 'allow' label are allowed to mount.\n", testMountPointPlugin, mountpoint.MountPointAPIAttach))
+
+	out, err = s.d.Cmd("run", "-d", "-l", "allow", "-v", "/:/host", "busybox", "true")
+	c.Assert(err, check.IsNil)
+}
+
+func (s *DockerMountPointSuite) TestMountPointPluginEmergencyDetach(c *check.C) {
+	s.d.Start(c, fmt.Sprintf("--mount-point-plugin=%s0", testMountPointPlugin))
+	s.d.LoadBusybox(c)
+
+	pwd, err := os.Getwd()
+	c.Assert(err, check.IsNil)
+	targetFile := filepath.Join(pwd, "target")
+
+	s.ctrl[0].attachRes = mountpoint.AttachResponse{
+		Success: true,
+		Attachments: []mountpoint.Attachment{
+			{
+				Attach: true,
+				EmergencyDetach: []mountpoint.EmergencyDetachAction{
+					{Remove: targetFile},
+					{Warning: "ran emergency detach"},
+				},
+			},
+		},
+	}
+
+	out, err := s.d.Cmd("run", "-d", "-v", pwd+":/host", "busybox", "sh", "-c",
+		"touch /host/target && top")
+	c.Assert(err, check.IsNil, check.Commentf("output: %s", out))
+	id := strings.TrimSpace(out)
+
+	file, err := os.Open(targetFile)
+	c.Assert(err, check.IsNil)
+	file.Close()
+
+	err = s.server[0].Config.Close()
+	c.Assert(err, check.IsNil)
+	defer s.setupPlugin(c, 0)
+
+	out, err = s.d.Cmd("stop", id)
+	c.Assert(err, check.IsNil, check.Commentf("output: %s", out))
+
+	_, err = os.Open(targetFile)
+	c.Assert(os.IsNotExist(err), check.Equals, true)
 }
