@@ -89,8 +89,10 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 		Patterns: []mountpoint.Pattern{
 			{Type: &typeBind},
 			{
-				Type:   &typeVolume,
-				Driver: []mountpoint.StringPattern{{Exactly: "local"}},
+				Type: &typeVolume,
+				Volume: mountpoint.VolumePattern{
+					Driver: []mountpoint.StringPattern{{Exactly: "local"}},
+				},
 			},
 		},
 	}
@@ -99,14 +101,16 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 		Success: true,
 		Patterns: []mountpoint.Pattern{
 			{
-				Type:   &typeVolume,
-				Driver: []mountpoint.StringPattern{{Exactly: "local"}},
-				Options: []mountpoint.StringMapPattern{{
-					Exists: []mountpoint.StringMapKeyValuePattern{{
-						Key:   mountpoint.StringPattern{Exactly: "o"},
-						Value: mountpoint.StringPattern{Contains: "bind"},
+				Type: &typeVolume,
+				Volume: mountpoint.VolumePattern{
+					Driver: []mountpoint.StringPattern{{Exactly: "local"}},
+					Options: []mountpoint.StringMapPattern{{
+						Exists: []mountpoint.StringMapKeyValuePattern{{
+							Key:   mountpoint.StringPattern{Exactly: "o"},
+							Value: mountpoint.StringPattern{Contains: "bind"},
+						}},
 					}},
-				}},
+				},
 			},
 		},
 	}
@@ -115,16 +119,18 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 		Success: true,
 		Patterns: []mountpoint.Pattern{
 			{
-				Type:   &typeVolume,
-				Driver: []mountpoint.StringPattern{{Exactly: "local"}},
-				Options: []mountpoint.StringMapPattern{{
-					Not: true,
-					Exists: []mountpoint.StringMapKeyValuePattern{
-						{Key: mountpoint.StringPattern{Exactly: "o"}},
-						{Key: mountpoint.StringPattern{Exactly: "device"}},
-						{Key: mountpoint.StringPattern{Exactly: "type"}},
-					},
-				}},
+				Type: &typeVolume,
+				Volume: mountpoint.VolumePattern{
+					Driver: []mountpoint.StringPattern{{Exactly: "local"}},
+					Options: []mountpoint.StringMapPattern{{
+						Not: true,
+						Exists: []mountpoint.StringMapKeyValuePattern{
+							{Key: mountpoint.StringPattern{Exactly: "o"}},
+							{Key: mountpoint.StringPattern{Exactly: "device"}},
+							{Key: mountpoint.StringPattern{Exactly: "type"}},
+						},
+					}},
+				},
 			},
 		},
 	}
@@ -134,14 +140,16 @@ func (s *DockerMountPointSuite) SetUpTest(c *check.C) {
 		Patterns: []mountpoint.Pattern{
 			{Type: &typeBind},
 			{
-				Type:   &typeVolume,
-				Driver: []mountpoint.StringPattern{{Exactly: "local"}},
-				Options: []mountpoint.StringMapPattern{{
-					Exists: []mountpoint.StringMapKeyValuePattern{{
-						Key:   mountpoint.StringPattern{Exactly: "o"},
-						Value: mountpoint.StringPattern{Contains: "bind"},
+				Type: &typeVolume,
+				Volume: mountpoint.VolumePattern{
+					Driver: []mountpoint.StringPattern{{Exactly: "local"}},
+					Options: []mountpoint.StringMapPattern{{
+						Exists: []mountpoint.StringMapKeyValuePattern{{
+							Key:   mountpoint.StringPattern{Exactly: "o"},
+							Value: mountpoint.StringPattern{Contains: "bind"},
+						}},
 					}},
-				}},
+				},
 			},
 		},
 	}
