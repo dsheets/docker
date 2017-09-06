@@ -334,8 +334,6 @@ func mountPointTypeOfAPIType(t mounttypes.Type) mountpoint.Type {
 		typ = mountpoint.TypeBind
 	case mounttypes.TypeVolume:
 		typ = mountpoint.TypeVolume
-	case mounttypes.TypeTmpfs:
-		typ = mountpoint.TypeTmpfs
 	}
 	return typ
 }
@@ -354,11 +352,14 @@ func middlewareMountPointOfMountPoint(image *container.Config, container *contai
 		scope = mountpoint.Scope(v.Scope())
 		options = v.Options()
 	}
-	var sizeBytes int64
-	var mode os.FileMode
-	if mp.Spec.TmpfsOptions != nil {
-		sizeBytes = mp.Spec.TmpfsOptions.SizeBytes
-		mode = mp.Spec.TmpfsOptions.Mode
+	v := mountpoint.Volume{
+		Name:          mp.Name,
+		Driver:        mp.Driver,
+		ID:            mp.ID,
+		Labels:        labels,
+		DriverOptions: driverOptions,
+		Scope:         scope,
+		Options:       options,
 	}
 	c := mountpoint.Container{
 		Labels: container.Labels,
@@ -367,26 +368,18 @@ func middlewareMountPointOfMountPoint(image *container.Config, container *contai
 		Labels: image.Labels,
 	}
 	return &mountpoint.MountPoint{
-		Source:          mp.Source,
-		EffectiveSource: mp.EffectiveSource(),
-		Destination:     mp.Destination,
-		ReadOnly:        !mp.RW,
-		Name:            mp.Name,
-		Driver:          mp.Driver,
-		Type:            typ,
-		Mode:            mp.Mode,
-		Propagation:     mp.Propagation,
-		ID:              mp.ID,
+		Source:                mp.Source,
+		EffectiveSource:       mp.EffectiveSource(),
+		Destination:           mp.Destination,
+		ReadOnly:              !mp.RW,
+		Type:                  typ,
+		Mode:                  mp.Mode,
+		Propagation:           mp.Propagation,
 		CreateSourceIfMissing: mp.CreateSourceIfMissing,
 		Consistency:           mp.Consistency,
 		EffectiveConsistency:  mp.EffectiveConsistency(),
-		Labels:                labels,
-		DriverOptions:         driverOptions,
-		Scope:                 scope,
-		SizeBytes:             sizeBytes,
-		MountMode:             mode,
-		Options:               options,
 		AppliedMiddleware:     MountPointAppliedMiddlewareOfAppliedMountPointMiddleware(mp.AppliedMiddleware),
+		Volume:                v,
 		Container:             c,
 		Image:                 i,
 	}

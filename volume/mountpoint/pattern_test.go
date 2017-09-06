@@ -703,17 +703,34 @@ func TestAppliedMiddlewareStackPatternRelativeOrder(t *testing.T) {
 
 func TestPattern(t *testing.T) {
 	mountpoint := &MountPoint{
-		EffectiveSource: "/src",
-		Source:          "/src",
-		Destination:     "/mnt/pt",
-		ReadOnly:        true,
-		Name:            "MyVolume",
-		Driver:          "local",
-		Type:            TypeVolume,
-		Mode:            "o=bind,foo=bar",
-		Propagation:     mount.PropagationShared,
-		ID:              "0123456789abcdef",
+		EffectiveSource:       "/src",
+		Source:                "/src",
+		Destination:           "/mnt/pt",
+		ReadOnly:              true,
+		Type:                  TypeVolume,
+		Mode:                  "o=bind,foo=bar",
+		Propagation:           mount.PropagationShared,
 		CreateSourceIfMissing: true,
+		Volume: Volume{
+			Name:   "MyVolume",
+			Driver: "local",
+			ID:     "0123456789abcdef",
+			Labels: map[string]string{
+				"label0": "value",
+				"label1": "",
+			},
+
+			DriverOptions: map[string]string{
+				"dopt0": "x",
+				"dopt1": "y",
+			},
+			Scope: LocalScope,
+
+			Options: map[string]string{
+				"opt0": "x",
+				"opt1": "y",
+			},
+		},
 		Container: Container{
 			Labels: map[string]string{
 				"clabel0": "value",
@@ -734,21 +751,6 @@ func TestPattern(t *testing.T) {
 
 		EffectiveConsistency: mount.ConsistencyCached,
 		Consistency:          mount.ConsistencyCached,
-		Labels: map[string]string{
-			"label0": "value",
-			"label1": "",
-		},
-
-		DriverOptions: map[string]string{
-			"dopt0": "x",
-			"dopt1": "y",
-		},
-		Scope: LocalScope,
-
-		Options: map[string]string{
-			"opt0": "x",
-			"opt1": "y",
-		},
 	}
 
 	pattern := Pattern{}
@@ -788,19 +790,27 @@ func TestPattern(t *testing.T) {
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
-		Name: []StringPattern{{Exactly: "MyVolume"}},
+		Volume: VolumePattern{
+			Name: []StringPattern{{Exactly: "MyVolume"}},
+		},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
-		Name: []StringPattern{{Not: true, Exactly: "MyVolume"}},
+		Volume: VolumePattern{
+			Name: []StringPattern{{Not: true, Exactly: "MyVolume"}},
+		},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
-		Driver: []StringPattern{{Exactly: "local"}},
+		Volume: VolumePattern{
+			Driver: []StringPattern{{Exactly: "local"}},
+		},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
-		Driver: []StringPattern{{Not: true, Exactly: "local"}},
+		Volume: VolumePattern{
+			Driver: []StringPattern{{Not: true, Exactly: "local"}},
+		},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	volume := TypeVolume
@@ -832,11 +842,15 @@ func TestPattern(t *testing.T) {
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
-		ID: []StringPattern{{Exactly: "0123456789abcdef"}},
+		Volume: VolumePattern{
+			ID: []StringPattern{{Exactly: "0123456789abcdef"}},
+		},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
-		ID: []StringPattern{{Not: true, Exactly: "0123456789abcdef"}},
+		Volume: VolumePattern{
+			ID: []StringPattern{{Not: true, Exactly: "0123456789abcdef"}},
+		},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
@@ -929,66 +943,82 @@ func TestPattern(t *testing.T) {
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
 	pattern = Pattern{
-		Labels: []StringMapPattern{{
-			Exists: []StringMapKeyValuePattern{
-				{Key: StringPattern{Exactly: "label0"}},
-			},
-		}},
+		Volume: VolumePattern{
+			Labels: []StringMapPattern{{
+				Exists: []StringMapKeyValuePattern{
+					{Key: StringPattern{Exactly: "label0"}},
+				},
+			}},
+		},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
-		Labels: []StringMapPattern{{
-			Not: true,
-			Exists: []StringMapKeyValuePattern{
-				{Key: StringPattern{Exactly: "label0"}},
-			},
-		}},
+		Volume: VolumePattern{
+			Labels: []StringMapPattern{{
+				Not: true,
+				Exists: []StringMapKeyValuePattern{
+					{Key: StringPattern{Exactly: "label0"}},
+				},
+			}},
+		},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
 	pattern = Pattern{
-		DriverOptions: []StringMapPattern{{
-			Exists: []StringMapKeyValuePattern{
-				{Key: StringPattern{Exactly: "dopt0"}},
-			},
-		}},
+		Volume: VolumePattern{
+			DriverOptions: []StringMapPattern{{
+				Exists: []StringMapKeyValuePattern{
+					{Key: StringPattern{Exactly: "dopt0"}},
+				},
+			}},
+		},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
-		DriverOptions: []StringMapPattern{{
-			Not: true,
-			Exists: []StringMapKeyValuePattern{
-				{Key: StringPattern{Exactly: "dopt0"}},
-			},
-		}},
+		Volume: VolumePattern{
+			DriverOptions: []StringMapPattern{{
+				Not: true,
+				Exists: []StringMapKeyValuePattern{
+					{Key: StringPattern{Exactly: "dopt0"}},
+				},
+			}},
+		},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 	localScope := LocalScope
 	pattern = Pattern{
-		Scope: &localScope,
+		Volume: VolumePattern{
+			Scope: &localScope,
+		},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	globalScope := GlobalScope
 	pattern = Pattern{
-		Scope: &globalScope,
+		Volume: VolumePattern{
+			Scope: &globalScope,
+		},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 
 	pattern = Pattern{
-		Options: []StringMapPattern{{
-			Exists: []StringMapKeyValuePattern{
-				{Key: StringPattern{Exactly: "opt0"}},
-			},
-		}},
+		Volume: VolumePattern{
+			Options: []StringMapPattern{{
+				Exists: []StringMapKeyValuePattern{
+					{Key: StringPattern{Exactly: "opt0"}},
+				},
+			}},
+		},
 	}
 	require.Equal(t, true, PatternMatches(pattern, mountpoint))
 	pattern = Pattern{
-		Options: []StringMapPattern{{
-			Not: true,
-			Exists: []StringMapKeyValuePattern{
-				{Key: StringPattern{Exactly: "opt0"}},
-			},
-		}},
+		Volume: VolumePattern{
+			Options: []StringMapPattern{{
+				Not: true,
+				Exists: []StringMapKeyValuePattern{
+					{Key: StringPattern{Exactly: "opt0"}},
+				},
+			}},
+		},
 	}
 	require.Equal(t, false, PatternMatches(pattern, mountpoint))
 }

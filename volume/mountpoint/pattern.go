@@ -21,6 +21,10 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 		return false
 	}
 
+	if !volumePatternMatches(pattern.Volume, mount.Volume) {
+		return false
+	}
+
 	if !containerPatternMatches(pattern.Container, mount.Container) {
 		return false
 	}
@@ -45,18 +49,6 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 		return false
 	}
 
-	for _, pattern := range pattern.Name {
-		if !StringPatternMatches(pattern, mount.Name) {
-			return false
-		}
-	}
-
-	for _, pattern := range pattern.Driver {
-		if !StringPatternMatches(pattern, mount.Driver) {
-			return false
-		}
-	}
-
 	if pattern.Type != nil && *pattern.Type != mount.Type {
 		return false
 	}
@@ -71,12 +63,6 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 		return false
 	}
 
-	for _, pattern := range pattern.ID {
-		if !StringPatternMatches(pattern, mount.ID) {
-			return false
-		}
-	}
-
 	if pattern.CreateSourceIfMissing != nil && *pattern.CreateSourceIfMissing != mount.CreateSourceIfMissing {
 		return false
 	}
@@ -89,24 +75,46 @@ func PatternMatches(pattern Pattern, mount *MountPoint) bool {
 		return false
 	}
 
+	return true
+}
+
+func volumePatternMatches(pattern VolumePattern, volume Volume) bool {
+	for _, pattern := range pattern.Name {
+		if !StringPatternMatches(pattern, volume.Name) {
+			return false
+		}
+	}
+
+	for _, pattern := range pattern.Driver {
+		if !StringPatternMatches(pattern, volume.Driver) {
+			return false
+		}
+	}
+
+	for _, pattern := range pattern.ID {
+		if !StringPatternMatches(pattern, volume.ID) {
+			return false
+		}
+	}
+
 	for _, pattern := range pattern.Labels {
-		if !stringMapPatternMatches(pattern, mount.Labels) {
+		if !stringMapPatternMatches(pattern, volume.Labels) {
 			return false
 		}
 	}
 
 	for _, pattern := range pattern.DriverOptions {
-		if !stringMapPatternMatches(pattern, mount.DriverOptions) {
+		if !stringMapPatternMatches(pattern, volume.DriverOptions) {
 			return false
 		}
 	}
 
-	if pattern.Scope != nil && *pattern.Scope != mount.Scope {
+	if pattern.Scope != nil && *pattern.Scope != volume.Scope {
 		return false
 	}
 
 	for _, pattern := range pattern.Options {
-		if !stringMapPatternMatches(pattern, mount.Options) {
+		if !stringMapPatternMatches(pattern, volume.Options) {
 			return false
 		}
 	}

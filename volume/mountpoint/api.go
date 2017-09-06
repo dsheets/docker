@@ -1,8 +1,6 @@
 package mountpoint
 
 import (
-	"os"
-
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
 )
@@ -108,31 +106,32 @@ type MountPoint struct {
 	EffectiveSource      string
 	EffectiveConsistency mount.Consistency `json:",omitempty"`
 
+	Volume    Volume    `json:",omitempty"`
 	Container Container `json:",omitempty"`
 	Image     Image     `json:",omitempty"`
 	// from volume/volume#MountPoint
 	Source                string
 	Destination           string
 	ReadOnly              bool              `json:",omitempty"`
-	Name                  string            `json:",omitempty"`
-	Driver                string            `json:",omitempty"`
 	Type                  Type              `json:",omitempty"`
 	Mode                  string            `json:",omitempty"`
 	Propagation           mount.Propagation `json:",omitempty"`
-	ID                    string            `json:",omitempty"`
 	CreateSourceIfMissing bool              `json:",omitempty"`
 
 	AppliedMiddleware []types.MountPointAppliedMiddleware
 
 	// from api/types/mount
 	Consistency mount.Consistency `json:",omitempty"`
-	Labels      map[string]string `json:",omitempty"`
+}
 
+// Volume describes a mounted volume
+type Volume struct {
+	Name          string            `json:",omitempty"`
+	Driver        string            `json:",omitempty"`
+	ID            string            `json:",omitempty"`
+	Labels        map[string]string `json:",omitempty"`
 	DriverOptions map[string]string `json:",omitempty"`
 	Scope         Scope             `json:",omitempty"`
-
-	SizeBytes int64       `json:",omitempty"`
-	MountMode os.FileMode `json:",omitempty"`
 
 	// from DetailedVolume cast
 	Options map[string]string `json:",omitempty"`
@@ -165,31 +164,32 @@ type Pattern struct {
 	EffectiveSource      []StringPattern    `json:",omitempty"`
 	EffectiveConsistency *mount.Consistency `json:",omitempty"`
 
+	Volume    VolumePattern    `json:",omitempty"`
 	Container ContainerPattern `json:",omitempty"`
 	Image     ImagePattern     `json:",omitempty"`
 	// from volume/volume#MountPoint
 	Source                []StringPattern    `json:",omitempty"`
 	Destination           []StringPattern    `json:",omitempty"`
 	ReadOnly              *bool              `json:",omitempty"`
-	Name                  []StringPattern    `json:",omitempty"`
-	Driver                []StringPattern    `json:",omitempty"`
 	Type                  *Type              `json:",omitempty"`
 	Mode                  []StringPattern    `json:",omitempty"`
 	Propagation           *mount.Propagation `json:",omitempty"`
-	ID                    []StringPattern    `json:",omitempty"`
 	CreateSourceIfMissing *bool              `json:",omitempty"`
 
 	AppliedMiddleware AppliedMiddlewareStackPattern
 
 	// from api/types/mount
 	Consistency *mount.Consistency `json:",omitempty"`
-	Labels      []StringMapPattern `json:",omitempty"`
+}
 
+// VolumePattern is a description of a class of volumes
+type VolumePattern struct {
+	Name          []StringPattern    `json:",omitempty"`
+	Driver        []StringPattern    `json:",omitempty"`
+	ID            []StringPattern    `json:",omitempty"`
+	Labels        []StringMapPattern `json:",omitempty"`
 	DriverOptions []StringMapPattern `json:",omitempty"`
 	Scope         *Scope             `json:",omitempty"`
-
-	//SizeBytes *int64       `json:",omitempty"`
-	//MountMode *os.FileMode `json:",omitempty"`
 
 	Options []StringMapPattern `json:",omitempty"`
 }
