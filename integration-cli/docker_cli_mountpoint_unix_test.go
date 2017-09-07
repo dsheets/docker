@@ -628,7 +628,11 @@ func (s *DockerMountPointSuite) TestMountPointPluginMultipleMounts(c *check.C) {
 
 	c.Assert(len(s.ctrl[1].attachMounts), check.Equals, 1)
 	c.Assert(len(s.ctrl[1].attachMounts[0]), check.Equals, 2)
-	c.Assert(s.ctrl[1].attachMounts[0][1].EffectiveSource, check.Equals, "/usr")
+	if s.ctrl[1].attachMounts[0][0].Source == "/" {
+		c.Assert(s.ctrl[1].attachMounts[0][0].EffectiveSource, check.Equals, "/usr")
+	} else {
+		c.Assert(s.ctrl[1].attachMounts[0][1].EffectiveSource, check.Equals, "/usr")
+	}
 
 	c.Assert(len(s.ctrl[2].attachMounts), check.Equals, 1)
 	c.Assert(len(s.ctrl[2].attachMounts[0]), check.Equals, 1)
