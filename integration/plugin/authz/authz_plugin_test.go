@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -449,6 +450,38 @@ func TestAuthZPluginHeader(t *testing.T) {
 	resp, err := client.Do(req)
 	require.Nil(t, err)
 	require.Equal(t, "application/json", resp.Header["Content-Type"][0])
+}
+
+func TestAuthZPluginReload(t *testing.T) {
+	defer setupTestV1(t)()
+	ctrl.reqRes.Allow = false
+	ctrl.reqRes.Msg = unauthorizedMessage
+
+	// necessary because SIGHUP reloading fails and recovers without
+	// the config file
+	err := ioutil.WriteFile("/etc/docker/daemon.json", []byte("{}"), 0644)
+	require.Nil(t, err)
+
+	d.Start(t, "--authorization-plugin="+testAuthZPlugin)
+
+	client, err := d.NewClient()
+	require.Nil(t, err)
+
+	_, err = client.ServerVersion(context.Background())
+	require.NotNil(t, err)
+	require.Equal(t, fmt.Sprintf("Error response from daemon: authorization denied by plugin %s: %s", testAuthZPlugin, unauthorizedMessage), err.Error())
+
+	err = d.Signal(syscall.SIGHUP)
+	require.Nil(t, err)
+
+	select {
+	case <-d.Wait:
+	case <-time.After(3 * time.Second):
+	}
+
+	_, err = client.ServerVersion(context.Background())
+	require.NotNil(t, err)
+	require.Equal(t, fmt.Sprintf("Error response from daemon: authorization denied by plugin %s: %s", testAuthZPlugin, unauthorizedMessage), err.Error())
 }
 
 // assertURIRecorded verifies that the given URI was sent and recorded
